@@ -5,7 +5,7 @@ import com.revconnect.interactionnotificationservice.entity.Analytics;
 import com.revconnect.interactionnotificationservice.repository.AnalyticsRepository;
 import com.revconnect.interactionnotificationservice.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -83,7 +83,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return (double) interactions / followers * 100;
     }
 
-    @KafkaListener(topics = "interaction-events", groupId = "analytics-group")
+    @EventListener
     public void consumeInteractionEvent(InteractionEvent event) {
         if ("LIKE".equals(event.getType())) {
             updateLikes(event.getPostId());
