@@ -1,9 +1,11 @@
 package com.revconnect.interactionnotificationservice.service.impl;
 
+import com.revconnect.interactionnotificationservice.dto.InteractionEvent;
 import com.revconnect.interactionnotificationservice.entity.Analytics;
 import com.revconnect.interactionnotificationservice.repository.AnalyticsRepository;
 import com.revconnect.interactionnotificationservice.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -75,8 +77,26 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         long interactions = likes + comments + shares;
 
-        if (followers == 0) return 0.0;
+        if (followers == 0)
+            return 0.0;
 
         return (double) interactions / followers * 100;
+    }
+
+    @KafkaListener(topics = "interaction-events", groupId = "analytics-group")
+    public void consumeInteractionEvent(InteractionEvent event) {
+        if ("LIKE".equals(event.getType())) {
+            updateLikes(event.getPostId());
+        } else if ("COMMENT".equals(event.getType())) {
+            updateComments(event.getPostId());
+        } else if ("SHARE".equals(event.getType())) {
+            updateShares(event.getPostId());
+        } else if ("UNLIKE".equals(event.getType())) {
+            Analytics analytics = getOrCreate(event.getPostId());
+            if (analytics.getLikes() > 0) {
+                analytics.setLikes(analytics.getLikes() - 1);
+                analyticsRepository.save(analytics);
+            }
+        }
     }
 }

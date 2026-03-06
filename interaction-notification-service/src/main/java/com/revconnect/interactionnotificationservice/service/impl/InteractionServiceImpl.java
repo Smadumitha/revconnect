@@ -1,7 +1,11 @@
 package com.revconnect.interactionnotificationservice.service.impl;
 
-
+import com.revconnect.interactionnotificationservice.client.PostServiceClient;
+import com.revconnect.interactionnotificationservice.dto.InteractionEvent;
 import com.revconnect.interactionnotificationservice.entity.Interaction;
+import com.revconnect.interactionnotificationservice.event.InteractionEventProducer;
+import com.revconnect.interactionnotificationservice.exception.ConflictException;
+import com.revconnect.interactionnotificationservice.exception.ResourceNotFoundException;
 import com.revconnect.interactionnotificationservice.repository.InteractionRepository;
 import com.revconnect.interactionnotificationservice.service.InteractionService;
 import com.revconnect.interactionnotificationservice.service.NotificationService;
@@ -11,23 +15,22 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-
-
 @Service
 @RequiredArgsConstructor
 public class InteractionServiceImpl implements InteractionService {
 
     private final InteractionRepository interactionRepository;
     private final NotificationService notificationService;
+    private final PostServiceClient postServiceClient;
+    private final InteractionEventProducer interactionEventProducer;
 
     @Override
     public String likePost(Long userId, Long postId) {
 
-        Optional<Interaction> existingLike =
-                interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
+        Optional<Interaction> existingLike = interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
 
         if (existingLike.isPresent()) {
-            return "Post already liked";
+            throw new ConflictException("Post already liked");
         }
 
         Interaction interaction = Interaction.builder()
@@ -39,34 +42,36 @@ public class InteractionServiceImpl implements InteractionService {
 
         interactionRepository.save(interaction);
 
-        Long postOwnerId = getPostOwner(postId);
+        interactionEventProducer.sendInteractionEvent(new InteractionEvent(postId, userId, "LIKE"));
+
+        Long postOwnerId;
+        try {
+            postOwnerId = postServiceClient.getPostOwnerId(postId);
+        } catch (Exception e) {
+            postOwnerId = 1L; // Fallback if post service is down
+        }
 
         notificationService.createNotification(
                 postOwnerId,
                 userId,
                 "LIKE",
-                "User " + userId + " liked your post"
-        );
+                "User " + userId + " liked your post");
 
         return "Post liked successfully";
     }
 
     public String unlikePost(Long userId, Long postId) {
 
-        Optional<Interaction> existingLike =
-                interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
+        Optional<Interaction> existingLike = interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
 
         if (existingLike.isEmpty()) {
-            return "Like not found";
+            throw new ResourceNotFoundException("Like not found");
         }
 
         interactionRepository.delete(existingLike.get());
 
-        return "Post unliked successfully";
-    }
+        interactionEventProducer.sendInteractionEvent(new InteractionEvent(postId, userId, "UNLIKE"));
 
-    //Temporary fix util the integration
-    private Long getPostOwner(Long postId) {
-        return 1L; // temporary
+        return "Post unliked successfully";
     }
 }

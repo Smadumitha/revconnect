@@ -1,6 +1,11 @@
 package com.revconnect.interactionnotificationservice.service.impl;
 
+import com.revconnect.interactionnotificationservice.client.PostServiceClient;
+import com.revconnect.interactionnotificationservice.dto.InteractionEvent;
 import com.revconnect.interactionnotificationservice.entity.Share;
+import com.revconnect.interactionnotificationservice.event.InteractionEventProducer;
+import com.revconnect.interactionnotificationservice.exception.ConflictException;
+import com.revconnect.interactionnotificationservice.exception.ResourceNotFoundException;
 import com.revconnect.interactionnotificationservice.repository.ShareRepository;
 import com.revconnect.interactionnotificationservice.service.NotificationService;
 import com.revconnect.interactionnotificationservice.service.ShareService;
@@ -16,16 +21,16 @@ public class ShareServiceImpl implements ShareService {
 
     private final ShareRepository shareRepository;
     private final NotificationService notificationService;
-
+    private final PostServiceClient postServiceClient;
+    private final InteractionEventProducer interactionEventProducer;
 
     @Override
     public String sharePost(Long userId, Long postId) {
 
-        Optional<Share> existingShare =
-                shareRepository.findByUserIdAndPostId(userId, postId);
+        Optional<Share> existingShare = shareRepository.findByUserIdAndPostId(userId, postId);
 
         if (existingShare.isPresent()) {
-            return "Post already shared";
+            throw new ConflictException("Post already shared");
         }
 
         Share share = Share.builder()
@@ -36,14 +41,20 @@ public class ShareServiceImpl implements ShareService {
 
         shareRepository.save(share);
 
-        Long postOwnerId = getPostOwner(postId);
+        interactionEventProducer.sendInteractionEvent(new InteractionEvent(postId, userId, "SHARE"));
+
+        Long postOwnerId;
+        try {
+            postOwnerId = postServiceClient.getPostOwnerId(postId);
+        } catch (Exception e) {
+            postOwnerId = 1L; // Fallback
+        }
 
         notificationService.createNotification(
                 postOwnerId,
                 userId,
                 "SHARE",
-                "User " + userId + " shared your post"
-        );
+                "User " + userId + " shared your post");
 
         return "Post shared successfully";
     }
@@ -51,22 +62,16 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public String undoShare(Long userId, Long postId) {
 
-        Optional<Share> existingShare =
-                shareRepository.findByUserIdAndPostId(userId, postId);
+        Optional<Share> existingShare = shareRepository.findByUserIdAndPostId(userId, postId);
 
         if (existingShare.isEmpty()) {
-            return "Share not found";
+            throw new ResourceNotFoundException("Share not found");
         }
 
         shareRepository.delete(existingShare.get());
 
+        // Note: Can send an UNSHARE event if analytics tracks it, but we won't for now.
+
         return "Share removed successfully";
-    }
-
-
-    //temporary fix until the integration
-    private Long getPostOwner(Long postId) {
-        // Temporary placeholder until Post Service integration
-        return 1L;
     }
 }
