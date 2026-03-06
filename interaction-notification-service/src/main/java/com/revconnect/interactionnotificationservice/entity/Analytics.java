@@ -18,6 +18,8 @@ public class Analytics {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long userId;
+
     private Long postId;
 
     private LocalDate date;
@@ -27,4 +29,8 @@ public class Analytics {
     private Long comments;
 
     private Long shares;
+
+    private Long newFollowers;
+
+    private Long profileViews;
 }
