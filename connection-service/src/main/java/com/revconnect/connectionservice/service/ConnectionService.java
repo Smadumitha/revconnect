@@ -28,8 +28,20 @@ public class ConnectionService {
     public ConnectionRequestDTO sendRequest(Long senderId, Long receiverId) {
 
         if(senderId.equals(receiverId)){
-            throw new RuntimeException("You cannot send request to yourself");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "You cannot send request to yourself"
+            );
         }
+
+
+        if(followerRepo.existsByFollowerIdAndFollowingId(senderId, receiverId)){
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Connection already exists"
+            );
+        }
+
 
         if(requestRepo.existsBySenderIdAndReceiverId(senderId, receiverId)){
             throw new ResponseStatusException(
@@ -38,10 +50,8 @@ public class ConnectionService {
             );
         }
 
-        if(requestRepo.existsBySenderIdAndReceiverIdOrSenderIdAndReceiverId(
-                senderId, receiverId,
-                receiverId, senderId)) {
 
+        if(requestRepo.existsBySenderIdAndReceiverId(receiverId, senderId)){
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Connection request already exists or pending"

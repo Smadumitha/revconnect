@@ -10,4 +10,5 @@ public interface FollowerRepository
     List<Follower> findByFollowerId(Long followerId);
 
     List<Follower> findByFollowingId(Long followingId);
+    boolean existsByFollowerIdAndFollowingId(Long followerId, Long followingId);
 }
