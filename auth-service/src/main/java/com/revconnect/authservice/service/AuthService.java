@@ -1,5 +1,6 @@
 package com.revconnect.authservice.service;
 
+import com.revconnect.authservice.client.UserClient;
 import com.revconnect.authservice.dto.*;
 import com.revconnect.authservice.entity.RefreshToken;
 import com.revconnect.authservice.entity.User;
@@ -7,6 +8,7 @@ import com.revconnect.authservice.repository.RefreshTokenRepository;
 import com.revconnect.authservice.repository.UserRepository;
 import com.revconnect.authservice.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final UserClient userClient;
 
     /*
      REGISTER
@@ -41,11 +44,26 @@ public class AuthService {
                 .failedAttempts(0)
                 .accountLocked(false)
                 .build();
+        User savedUser = userRepository.save(user);
 
-        userRepository.save(user);
+        // CALL USER SERVICE
+        CreateUserProfileRequest profileRequest =
+                new CreateUserProfileRequest(
+                        savedUser.getId(),
+                        savedUser.getUsername()
+                );
 
-        String accessToken = jwtUtil.generateToken(user.getUsername());
-        String refreshToken = createRefreshToken(user);
+//        userRepository.save(user);
+//        userClient.createUserProfile(profileRequest);
+        UserProfileResponse response = userClient.createUserProfile(profileRequest);
+
+        System.out.println("User profile created: " + response.getUsername());
+        System.out.println("Sending to user-service:");
+        System.out.println(savedUser.getId());
+        System.out.println(savedUser.getUsername());
+
+        String accessToken = jwtUtil.generateToken(savedUser.getUsername());
+        String refreshToken = createRefreshToken(savedUser);
 
         return new AuthResponse(accessToken, refreshToken);
     }

@@ -1,5 +1,6 @@
 package com.revconnect.postfeedservice.client;
 
+import com.revconnect.postfeedservice.dto.FollowerResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +11,6 @@ import java.util.List;
 public interface ConnectionClient {
 
     @GetMapping("/connections/following/{userId}")
-    List<Long> getFollowingUsers(@PathVariable Long userId);
+    List<FollowerResponse> getFollowingUsers(@PathVariable("userId") Long userId);
 
 }

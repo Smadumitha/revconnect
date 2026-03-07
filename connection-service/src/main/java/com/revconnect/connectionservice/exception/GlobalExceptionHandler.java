@@ -27,4 +27,11 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ex.getMessage());
     }
+
+    @ExceptionHandler(feign.FeignException.class)
+    public ResponseEntity<String> handleFeignException(feign.FeignException ex){
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body("User service unavailable");
+    }
 }

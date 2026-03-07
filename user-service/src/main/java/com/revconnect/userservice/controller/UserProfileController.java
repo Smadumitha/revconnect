@@ -1,8 +1,10 @@
 package com.revconnect.userservice.controller;
 
+import com.revconnect.userservice.dto.CreateUserProfileRequest;
 import com.revconnect.userservice.dto.UpdatePrivacyRequest;
 import com.revconnect.userservice.dto.UpdateUserProfileRequest;
 import com.revconnect.userservice.dto.UserProfileResponse;
+import com.revconnect.userservice.entity.UserProfile;
 import com.revconnect.userservice.service.UserProfileService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,16 @@ public class UserProfileController {
 
     public UserProfileController(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+    }
+    @PostMapping
+    public UserProfileResponse createUserProfile(@RequestBody CreateUserProfileRequest request) {
+        System.out.println("Received userId: " + request.getUserId());
+        System.out.println("Received username: " + request.getUsername());
+        UserProfile profile = new UserProfile();
+        profile.setUserId(request.getUserId());
+        profile.setUsername(request.getUsername());
+
+        return userProfileService.createUserProfile(profile);
     }
 
     @GetMapping("/{userId}")

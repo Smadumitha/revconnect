@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    @GetMapping("/{postId}/owner")
+    public Long getPostOwner(@PathVariable Long postId){
+        return postService.getPostOwnerId(postId);
+    }
 
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@RequestBody PostRequest request){

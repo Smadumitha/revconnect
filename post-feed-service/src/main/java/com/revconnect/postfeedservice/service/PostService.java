@@ -173,4 +173,11 @@ public class PostService {
 
         scheduledPostRepository.save(scheduledPost);
     }
+    public Long getPostOwnerId(Long postId){
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        return post.getUserId();
+    }
 }

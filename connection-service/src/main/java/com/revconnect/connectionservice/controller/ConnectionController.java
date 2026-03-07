@@ -24,10 +24,11 @@ public class ConnectionController {
 
     @PostMapping("/request")
     public ConnectionRequestDTO sendRequest(
-            @RequestParam Long senderId,
-            @RequestParam Long receiverId) {
+            @RequestBody ConnectionRequestDTO request){
 
-        return connectionService.sendRequest(senderId, receiverId);
+        return connectionService.sendRequest(
+                request.getSenderId(),
+                request.getReceiverId());
     }
 
     @PutMapping("/accept/{requestId}")

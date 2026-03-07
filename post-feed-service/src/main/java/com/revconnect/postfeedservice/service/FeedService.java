@@ -1,6 +1,7 @@
 package com.revconnect.postfeedservice.service;
 
 import com.revconnect.postfeedservice.client.ConnectionClient;
+import com.revconnect.postfeedservice.dto.FollowerResponse;
 import com.revconnect.postfeedservice.dto.PostResponse;
 import com.revconnect.postfeedservice.entity.Post;
 import com.revconnect.postfeedservice.repository.PostRepository;
@@ -17,10 +18,17 @@ public class FeedService {
 
     public List<PostResponse> getHomeFeed(Long userId){
 
-        // Temporary hardcoded following users
-        List<Long> following = List.of(1L, 2L, 3L);
+        List<FollowerResponse> followers = connectionClient.getFollowingUsers(userId);
 
-        List<Post> posts = postRepository.findByUserIdIn(following);
+        List<Long> followingIds = followers.stream()
+                .map(FollowerResponse::getFollowingId)
+                .toList();
+
+        if(followingIds.isEmpty()){
+            return List.of();
+        }
+
+        List<Post> posts = postRepository.findByUserIdIn(followingIds);
 
         return posts.stream()
                 .map(this::mapToResponse)

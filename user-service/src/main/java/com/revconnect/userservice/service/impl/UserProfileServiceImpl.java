@@ -88,6 +88,14 @@ public class UserProfileServiceImpl implements UserProfileService {
         privacySettingsRepository.save(privacySettings);
     }
 
+    @Override
+    public UserProfileResponse createUserProfile(UserProfile profile) {
+
+        UserProfile savedProfile = userProfileRepository.save(profile);
+
+        return mapToResponse(savedProfile);
+    }
+
     private UserProfileResponse mapToResponse(UserProfile profile) {
 
         return new UserProfileResponse(

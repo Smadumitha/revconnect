@@ -26,7 +26,17 @@ public class InteractionServiceImpl implements InteractionService {
 
     @Override
     public String likePost(Long userId, Long postId) {
+        Long postOwnerId;
 
+        try {
+            postOwnerId = postServiceClient.getPostOwnerId(postId);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("Post not found");
+        }
+
+        if(postOwnerId == null){
+            throw new ResourceNotFoundException("Post not found");
+        }
         Optional<Interaction> existingLike = interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
 
         if (existingLike.isPresent()) {
@@ -44,12 +54,10 @@ public class InteractionServiceImpl implements InteractionService {
 
         interactionEventProducer.sendInteractionEvent(new InteractionEvent(postId, userId, "LIKE"));
 
-        Long postOwnerId;
-        try {
-            postOwnerId = postServiceClient.getPostOwnerId(postId);
-        } catch (Exception e) {
-            postOwnerId = 1L; // Fallback if post service is down
-        }
+        // Send event for analytics
+        interactionEventProducer.sendInteractionEvent(
+                new InteractionEvent(postId, userId, "LIKE")
+        );
 
         notificationService.createNotification(
                 postOwnerId,

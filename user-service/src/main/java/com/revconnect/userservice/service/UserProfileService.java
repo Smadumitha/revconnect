@@ -3,6 +3,7 @@ package com.revconnect.userservice.service;
 import com.revconnect.userservice.dto.UpdatePrivacyRequest;
 import com.revconnect.userservice.dto.UpdateUserProfileRequest;
 import com.revconnect.userservice.dto.UserProfileResponse;
+import com.revconnect.userservice.entity.UserProfile;
 
 import java.util.List;
 
@@ -17,5 +18,7 @@ public interface UserProfileService {
     void deleteUserProfile(Long userId);
 
     void updatePrivacy(Long userId, UpdatePrivacyRequest request);
+
+    UserProfileResponse createUserProfile(UserProfile profile);
 
 }

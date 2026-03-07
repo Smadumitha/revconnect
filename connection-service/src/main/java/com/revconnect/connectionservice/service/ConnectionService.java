@@ -1,11 +1,14 @@
 package com.revconnect.connectionservice.service;
 
+import com.revconnect.connectionservice.client.UserClient;
 import com.revconnect.connectionservice.dto.ConnectionRequestDTO;
+import com.revconnect.connectionservice.dto.UserProfileResponse;
 import com.revconnect.connectionservice.entity.ConnectionRequest;
 import com.revconnect.connectionservice.entity.Follower;
 import com.revconnect.connectionservice.exception.ResourceNotFoundException;
 import com.revconnect.connectionservice.repository.ConnectionRequestRepository;
 import com.revconnect.connectionservice.repository.FollowerRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,7 +21,8 @@ public class ConnectionService {
 
     private final ConnectionRequestRepository requestRepo;
     private final FollowerRepository followerRepo;
-
+    @Autowired
+    private UserClient userClient;
     public ConnectionService(ConnectionRequestRepository requestRepo,
                              FollowerRepository followerRepo) {
         this.requestRepo = requestRepo;
@@ -27,6 +31,19 @@ public class ConnectionService {
 
     public ConnectionRequestDTO sendRequest(Long senderId, Long receiverId) {
 
+        UserProfileResponse sender;
+        UserProfileResponse receiver;
+
+        try {
+            sender = userClient.getUserProfile(senderId);
+            receiver = userClient.getUserProfile(receiverId);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        if(sender == null || receiver == null){
+            throw new ResourceNotFoundException("User not found");
+        }
         if(senderId.equals(receiverId)){
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
