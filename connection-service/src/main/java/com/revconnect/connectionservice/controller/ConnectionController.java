@@ -1,6 +1,7 @@
 package com.revconnect.connectionservice.controller;
 
 import com.revconnect.connectionservice.dto.ConnectionRequestDTO;
+import com.revconnect.connectionservice.entity.ConnectionRequest;
 import com.revconnect.connectionservice.entity.Follower;
 import com.revconnect.connectionservice.service.ConnectionService;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,24 @@ public class ConnectionController {
     public String test() {
         return "Connection Service Working";
     }
+    @GetMapping
+    public List<Long> getConnections(@RequestParam Long userId){
+        return connectionService.getConnections(userId);
+    }
+    @GetMapping("/pending/received")
+    public List<ConnectionRequest> getPendingReceived(@RequestParam Long userId){
+        return connectionService.getPendingReceived(userId);
+    }
 
+    @GetMapping("/pending/sent")
+    public List<ConnectionRequest> getPendingSent(@RequestParam Long userId){
+        return connectionService.getPendingSent(userId);
+    }
+    @DeleteMapping("/{id}")
+    public String removeConnection(@PathVariable Long id){
+        connectionService.removeConnection(id);
+        return "Connection removed successfully";
+    }
     @PostMapping("/request")
     public ConnectionRequestDTO sendRequest(
             @RequestBody ConnectionRequestDTO request){

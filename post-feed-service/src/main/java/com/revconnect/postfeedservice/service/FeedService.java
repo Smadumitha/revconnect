@@ -4,6 +4,7 @@ import com.revconnect.postfeedservice.client.ConnectionClient;
 import com.revconnect.postfeedservice.dto.FollowerResponse;
 import com.revconnect.postfeedservice.dto.PostResponse;
 import com.revconnect.postfeedservice.entity.Post;
+import com.revconnect.postfeedservice.repository.HashtagRepository;
 import com.revconnect.postfeedservice.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ public class FeedService {
 
     private final PostRepository postRepository;
     private final ConnectionClient connectionClient;
+    private final HashtagRepository hashtagRepository;
 
     public List<PostResponse> getHomeFeed(Long userId){
 
@@ -68,5 +70,8 @@ public class FeedService {
                 .pinned(post.getPinned())
                 .createdAt(post.getCreatedAt())
                 .build();
+    }
+    public List<String> getTrendingTags(){
+        return hashtagRepository.findTrendingTags();
     }
 }

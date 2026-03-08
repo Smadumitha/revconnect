@@ -13,4 +13,10 @@ public interface ConnectionRequestRepository
             Long senderId, Long receiverId,
             Long receiverId2, Long senderId2
     );
+
+    // NEW METHODS (for pending requests)
+    List<ConnectionRequest> findByReceiverIdAndStatus(Long receiverId, String status);
+
+    List<ConnectionRequest> findBySenderIdAndStatus(Long senderId, String status);
+
 }

@@ -24,6 +24,26 @@ public class UserProfileServiceImpl implements UserProfileService {
         this.userProfileRepository = userProfileRepository;
         this.privacySettingsRepository = privacySettingsRepository;
     }
+    @Override
+    public UserProfileResponse getUserByUsername(String username) {
+
+        UserProfile user = userProfileRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return mapToResponse(user);
+    }
+    @Override
+    public List<UserProfileResponse> getSuggestedUsers(Long userId) {
+
+        List<UserProfile> users = userProfileRepository.findAll();
+
+        return users.stream()
+                .filter(user -> !user.getUserId().equals(userId)) // exclude current user
+                .limit(10) // show top 10 suggestions
+                .map(this::mapToResponse)
+                .toList();
+    }
 
     @Override
     public UserProfileResponse getUserProfile(Long userId) {

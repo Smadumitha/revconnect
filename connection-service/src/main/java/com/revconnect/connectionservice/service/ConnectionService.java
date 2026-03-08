@@ -142,6 +142,31 @@ public class ConnectionService {
                         .anyMatch(f2 -> f2.getFollowingId().equals(f1.getFollowingId())))
                 .toList();
     }
+    public List<Long> getConnections(Long userId){
+
+        List<Follower> followers = followerRepo.findByFollowingId(userId);
+        List<Follower> following = followerRepo.findByFollowerId(userId);
+
+        List<Long> connections = new java.util.ArrayList<>();
+
+        followers.forEach(f -> connections.add(f.getFollowerId()));
+        following.forEach(f -> connections.add(f.getFollowingId()));
+
+        return connections;
+    }
+    public List<ConnectionRequest> getPendingReceived(Long userId){
+        return requestRepo.findByReceiverIdAndStatus(userId,"PENDING");
+    }
+    public List<ConnectionRequest> getPendingSent(Long userId){
+        return requestRepo.findBySenderIdAndStatus(userId,"PENDING");
+    }
+    public void removeConnection(Long id){
+
+        Follower follower = followerRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Connection not found"));
+
+        followerRepo.delete(follower);
+    }
 
     private ConnectionRequestDTO mapToDTO(ConnectionRequest request){
 

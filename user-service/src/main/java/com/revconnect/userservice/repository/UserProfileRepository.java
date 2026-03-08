@@ -18,4 +18,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
 
     // Check if username already exists
     boolean existsByUsername(String username);
+
+    Optional<UserProfile> findByUsername(String username);
+
+    
 }

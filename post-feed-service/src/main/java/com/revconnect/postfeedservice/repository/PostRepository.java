@@ -24,4 +24,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
        WHERE h.tag = :tag
        """)
     List<Post> findPostsByHashtag(String tag);
+    List<Post> findByUserId(Long userId);
 }

@@ -20,5 +20,6 @@ public interface UserProfileService {
     void updatePrivacy(Long userId, UpdatePrivacyRequest request);
 
     UserProfileResponse createUserProfile(UserProfile profile);
-
+    UserProfileResponse getUserByUsername(String username);
+    List<UserProfileResponse> getSuggestedUsers(Long userId);
 }

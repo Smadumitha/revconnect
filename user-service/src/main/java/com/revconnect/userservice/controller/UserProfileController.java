@@ -20,6 +20,18 @@ public class UserProfileController {
     public UserProfileController(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
     }
+    @GetMapping("/suggestions")
+    public List<UserProfileResponse> getSuggestions(@RequestParam Long userId){
+        return userProfileService.getSuggestedUsers(userId);
+    }
+    @GetMapping("/me")
+    public UserProfileResponse getCurrentUser(@RequestParam Long userId){
+        return userProfileService.getUserProfile(userId);
+    }
+    @GetMapping("/username/{username}")
+    public UserProfileResponse getByUsername(@PathVariable String username){
+        return userProfileService.getUserByUsername(username);
+    }
     @PostMapping
     public UserProfileResponse createUserProfile(@RequestBody CreateUserProfileRequest request) {
         System.out.println("Received userId: " + request.getUserId());

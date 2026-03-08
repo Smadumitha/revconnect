@@ -27,4 +27,14 @@ public class NotificationController {
         notificationService.markAsRead(notificationId);
         return ResponseEntity.ok(ApiResponse.success("Success", "Notification marked as read"));
     }
+
+    @GetMapping("/unread-count")
+    public Long getUnreadCount(@RequestParam Long userId){
+        return notificationService.getUnreadCount(userId);
+    }
+    @PutMapping("/read-all")
+    public String markAllRead(@RequestParam Long userId){
+        notificationService.markAllAsRead(userId);
+        return "All notifications marked as read";
+    }
 }

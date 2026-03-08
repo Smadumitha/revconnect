@@ -20,7 +20,10 @@ public class FeedController {
 
         return feedService.getHomeFeed(userId);
     }
-
+    @GetMapping("/trending-tags")
+    public List<String> trendingTags(){
+        return feedService.getTrendingTags();
+    }
     // Trending Posts
     @GetMapping("/trending")
     public List<PostResponse> trendingPosts() {

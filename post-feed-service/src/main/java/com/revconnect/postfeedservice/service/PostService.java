@@ -180,4 +180,13 @@ public class PostService {
 
         return post.getUserId();
     }
+    public List<PostResponse> getPostsByUser(Long userId){
+
+        List<Post> posts = postRepository.findByUserId(userId);
+
+        return posts.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
 }

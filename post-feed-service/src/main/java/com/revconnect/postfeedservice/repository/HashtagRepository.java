@@ -18,4 +18,13 @@ JOIN Hashtag h ON h.id = ph.hashtagId
 WHERE h.tag = :tag
 """)
     List<Post> findPostsByHashtag(String tag);
+
+    @Query("""
+SELECT h.tag
+FROM Hashtag h
+JOIN PostHashtag ph ON ph.hashtagId = h.id
+GROUP BY h.tag
+ORDER BY COUNT(ph.id) DESC
+""")
+    List<String> findTrendingTags();
 }
