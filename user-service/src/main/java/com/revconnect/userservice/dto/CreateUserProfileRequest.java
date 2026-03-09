@@ -4,6 +4,8 @@ public class CreateUserProfileRequest {
 
     private Long userId;
     private String username;
+    private String email;
+    private String role;
 
     public Long getUserId() {
         return userId;
@@ -19,5 +21,21 @@ public class CreateUserProfileRequest {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

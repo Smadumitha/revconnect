@@ -1,8 +1,9 @@
 package com.revconnect.interactionnotificationservice.controller;
 
 import com.revconnect.interactionnotificationservice.dto.ApiResponse;
+import com.revconnect.interactionnotificationservice.dto.UserAnalyticsDTO;
 import com.revconnect.interactionnotificationservice.entity.Analytics;
-import com.revconnect.interactionnotificationservice.service.impl.AnalyticsServiceImpl;
+import com.revconnect.interactionnotificationservice.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AnalyticsController {
 
-    private final AnalyticsServiceImpl analyticsService;
+    private final AnalyticsService analyticsService;
 
     @GetMapping("/post/{postId}")
     public ResponseEntity<ApiResponse<List<Analytics>>> getPostAnalytics(@PathVariable Long postId) {
@@ -28,5 +29,19 @@ public class AnalyticsController {
             @RequestParam Long followers) {
         Double result = analyticsService.calculateEngagement(postId, followers);
         return ResponseEntity.ok(ApiResponse.success("Success", result));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<UserAnalyticsDTO>> getUserAnalytics(
+            @PathVariable Long userId,
+            @RequestParam(required = false, defaultValue = "0") Long followers) {
+        UserAnalyticsDTO result = analyticsService.getUserAnalytics(userId, followers);
+        return ResponseEntity.ok(ApiResponse.success("Success", result));
+    }
+
+    @PostMapping("/view/profile/{userId}")
+    public ResponseEntity<ApiResponse<String>> trackProfileView(@PathVariable Long userId) {
+        analyticsService.incrementProfileViews(userId);
+        return ResponseEntity.ok(ApiResponse.success("Success", "View tracked"));
     }
 }

@@ -6,7 +6,11 @@ import com.revconnect.postfeedservice.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -21,11 +25,9 @@ public class PostController {
     }
 
     @GetMapping("/user/{userId}")
-    public List<PostResponse> getPostsByUser(@PathVariable Long userId){
-        return postService.getPostsByUser(userId);
+    public List<PostResponse> getPostsByUser(@PathVariable Long userId, @RequestParam(required = false) Long currentUserId){
+        return postService.getPostsByUser(userId, currentUserId);
     }
-
-
 
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@RequestBody PostRequest request){
@@ -45,7 +47,19 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PostResponse> getPost(@PathVariable Long id){
-        return ResponseEntity.ok(postService.getPostById(id));
+    public ResponseEntity<PostResponse> getPost(@PathVariable Long id, @RequestParam(required = false) Long userId){
+        return ResponseEntity.ok(postService.getPostById(id, userId));
+    }
+
+    @PostMapping("/{postId}/media")
+    public ResponseEntity<String> uploadMedia(@PathVariable Long postId,
+                                              @RequestParam("file") MultipartFile file) throws IOException {
+        String filename = "post_" + postId + "_" + file.getOriginalFilename();
+        Path path = Paths.get("uploads/" + filename);
+        Files.createDirectories(path.getParent());
+        Files.write(path, file.getBytes());
+        String url = "/uploads/" + filename;
+        postService.updateMediaUrl(postId, url);
+        return ResponseEntity.ok(url);
     }
 }

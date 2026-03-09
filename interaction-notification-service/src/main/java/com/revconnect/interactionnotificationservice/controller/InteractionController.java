@@ -28,4 +28,14 @@ public class InteractionController {
         String result = interactionService.unlikePost(userId, postId);
         return ResponseEntity.ok(ApiResponse.success("Success", result));
     }
+
+    @GetMapping("/count")
+    public long getLikeCount(@RequestParam Long postId) {
+        return interactionService.getLikeCount(postId);
+    }
+
+    @GetMapping("/has-liked")
+    public boolean hasLiked(@RequestParam Long userId, @RequestParam Long postId) {
+        return interactionService.hasLiked(userId, postId);
+    }
 }

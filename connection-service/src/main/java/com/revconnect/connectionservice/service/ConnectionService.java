@@ -2,6 +2,7 @@ package com.revconnect.connectionservice.service;
 
 import com.revconnect.connectionservice.client.UserClient;
 import com.revconnect.connectionservice.dto.ConnectionRequestDTO;
+import com.revconnect.connectionservice.dto.ConnectionStatusDTO;
 import com.revconnect.connectionservice.dto.UserProfileResponse;
 import com.revconnect.connectionservice.entity.ConnectionRequest;
 import com.revconnect.connectionservice.entity.Follower;
@@ -15,14 +16,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ConnectionService {
-
     private final ConnectionRequestRepository requestRepo;
     private final FollowerRepository followerRepo;
     @Autowired
     private UserClient userClient;
+
     public ConnectionService(ConnectionRequestRepository requestRepo,
                              FollowerRepository followerRepo) {
         this.requestRepo = requestRepo;
@@ -30,49 +32,25 @@ public class ConnectionService {
     }
 
     public ConnectionRequestDTO sendRequest(Long senderId, Long receiverId) {
-
         UserProfileResponse sender;
         UserProfileResponse receiver;
-
         try {
             sender = userClient.getUserProfile(senderId);
             receiver = userClient.getUserProfile(receiverId);
         } catch (Exception e) {
             throw new ResourceNotFoundException("User not found");
         }
-
-        if(sender == null || receiver == null){
-            throw new ResourceNotFoundException("User not found");
-        }
-        if(senderId.equals(receiverId)){
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "You cannot send request to yourself"
-            );
-        }
-
+        if(sender == null || receiver == null) throw new ResourceNotFoundException("User not found");
+        if(senderId.equals(receiverId)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Self connection not allowed");
 
         if(followerRepo.existsByFollowerIdAndFollowingId(senderId, receiverId)){
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Connection already exists"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Already following");
         }
 
-
-        if(requestRepo.existsBySenderIdAndReceiverId(senderId, receiverId)){
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Connection request already sent"
-            );
-        }
-
-
-        if(requestRepo.existsBySenderIdAndReceiverId(receiverId, senderId)){
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Connection request already exists or pending"
-            );
+        Optional<ConnectionRequest> existing = requestRepo.findBySenderIdAndReceiverId(senderId, receiverId);
+        if(existing.isPresent()){
+            if("PENDING".equals(existing.get().getStatus())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request already pending");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request already exists with status: " + existing.get().getStatus());
         }
 
         ConnectionRequest request = new ConnectionRequest();
@@ -80,17 +58,12 @@ public class ConnectionService {
         request.setReceiverId(receiverId);
         request.setStatus("PENDING");
         request.setCreatedAt(LocalDateTime.now());
-
-        ConnectionRequest saved = requestRepo.save(request);
-
-        return mapToDTO(saved);
+        return mapToDTO(requestRepo.save(request));
     }
 
     public ConnectionRequestDTO acceptRequest(Long requestId) {
-
         ConnectionRequest request = requestRepo.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Connection request not found"));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
         request.setStatus("ACCEPTED");
         requestRepo.save(request);
 
@@ -98,86 +71,91 @@ public class ConnectionService {
         follower.setFollowerId(request.getSenderId());
         follower.setFollowingId(request.getReceiverId());
         follower.setCreatedAt(LocalDateTime.now());
-
         followerRepo.save(follower);
 
         return mapToDTO(request);
     }
 
     public ConnectionRequestDTO rejectRequest(Long requestId) {
-
         ConnectionRequest request = requestRepo.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Connection request not found"));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
         request.setStatus("REJECTED");
-
-        ConnectionRequest saved = requestRepo.save(request);
-
-        return mapToDTO(saved);
+        return mapToDTO(requestRepo.save(request));
     }
 
-    public List<Follower> getFollowers(Long userId) {
-        return followerRepo.findByFollowingId(userId);
-    }
-
-    public List<Follower> getFollowing(Long userId) {
-        return followerRepo.findByFollowerId(userId);
-    }
+    public List<Follower> getFollowers(Long userId) { return followerRepo.findByFollowingId(userId); }
+    public List<Follower> getFollowing(Long userId) { return followerRepo.findByFollowerId(userId); }
 
     public void unfollow(Long followerId, Long followingId) {
-
-        List<Follower> relations = followerRepo.findByFollowerId(followerId);
-
-        relations.stream()
+        followerRepo.findByFollowerId(followerId).stream()
                 .filter(f -> f.getFollowingId().equals(followingId))
                 .forEach(followerRepo::delete);
+        
+        requestRepo.findBySenderIdAndReceiverId(followerId, followingId)
+            .ifPresent(r -> { r.setStatus("REMOVED"); requestRepo.save(r); });
     }
 
     public List<Follower> getMutualConnections(Long user1, Long user2) {
-        List<Follower> user1Following = followerRepo.findByFollowerId(user1);
-        List<Follower> user2Following = followerRepo.findByFollowerId(user2);
-
-        return user1Following.stream()
-                .filter(f1 -> user2Following.stream()
-                        .anyMatch(f2 -> f2.getFollowingId().equals(f1.getFollowingId())))
-                .toList();
+        List<Follower> u1f = followerRepo.findByFollowerId(user1);
+        List<Follower> u2f = followerRepo.findByFollowerId(user2);
+        return u1f.stream().filter(f1 -> u2f.stream().anyMatch(f2 -> f2.getFollowingId().equals(f1.getFollowingId()))).toList();
     }
+
     public List<Long> getConnections(Long userId){
-
-        List<Follower> followers = followerRepo.findByFollowingId(userId);
-        List<Follower> following = followerRepo.findByFollowerId(userId);
-
         List<Long> connections = new java.util.ArrayList<>();
-
-        followers.forEach(f -> connections.add(f.getFollowerId()));
-        following.forEach(f -> connections.add(f.getFollowingId()));
-
+        followerRepo.findByFollowingId(userId).forEach(f -> connections.add(f.getFollowerId()));
+        followerRepo.findByFollowerId(userId).forEach(f -> connections.add(f.getFollowingId()));
         return connections;
     }
-    public List<ConnectionRequest> getPendingReceived(Long userId){
-        return requestRepo.findByReceiverIdAndStatus(userId,"PENDING");
-    }
-    public List<ConnectionRequest> getPendingSent(Long userId){
-        return requestRepo.findBySenderIdAndStatus(userId,"PENDING");
-    }
-    public void removeConnection(Long id){
 
-        Follower follower = followerRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Connection not found"));
+    public ConnectionStatusDTO getConnectionStatus(Long userId, Long targetId) {
+        boolean isFollowing = followerRepo.existsByFollowerIdAndFollowingId(userId, targetId);
+        boolean isConnected = isConnected(userId, targetId);
+        boolean isPendingSent = requestRepo.findBySenderIdAndReceiverIdAndStatus(userId, targetId, "PENDING").isPresent();
+        boolean isPendingReceived = requestRepo.findBySenderIdAndReceiverIdAndStatus(targetId, userId, "PENDING").isPresent();
 
-        followerRepo.delete(follower);
+        return ConnectionStatusDTO.builder()
+                .isFollowing(isFollowing)
+                .isConnected(isConnected)
+                .isPendingSent(isPendingSent)
+                .isPendingReceived(isPendingReceived)
+                .build();
     }
+
+    public boolean isConnected(Long userId, Long targetId) {
+        return requestRepo.findBySenderIdAndReceiverIdAndStatus(userId, targetId, "ACCEPTED").isPresent() ||
+               requestRepo.findBySenderIdAndReceiverIdAndStatus(targetId, userId, "ACCEPTED").isPresent();
+    }
+
+    public List<ConnectionRequestDTO> getPendingReceived(Long userId){ 
+        return requestRepo.findByReceiverIdAndStatus(userId,"PENDING").stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+    
+    public List<ConnectionRequestDTO> getPendingSent(Long userId){ 
+        return requestRepo.findBySenderIdAndStatus(userId,"PENDING").stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+    
+    public void removeConnection(Long id){ followerRepo.delete(followerRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found"))); }
 
     private ConnectionRequestDTO mapToDTO(ConnectionRequest request){
-
         ConnectionRequestDTO dto = new ConnectionRequestDTO();
-
         dto.setId(request.getId());
         dto.setSenderId(request.getSenderId());
         dto.setReceiverId(request.getReceiverId());
         dto.setStatus(request.getStatus());
         dto.setCreatedAt(request.getCreatedAt());
-
+        
+        try {
+            dto.setRequester(userClient.getUserProfile(request.getSenderId()));
+            dto.setRecipient(userClient.getUserProfile(request.getReceiverId()));
+        } catch (Exception e) {
+            // Log or ignore
+        }
+        
         return dto;
     }
 }

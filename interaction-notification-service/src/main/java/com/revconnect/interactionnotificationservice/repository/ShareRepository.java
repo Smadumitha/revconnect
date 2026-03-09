@@ -9,5 +9,7 @@ public interface ShareRepository extends JpaRepository<Share, Long> {
 
     Optional<Share> findByUserIdAndPostId(Long userId, Long postId);
 
+    boolean existsByUserIdAndPostId(Long userId, Long postId);
+
     long countByPostId(Long postId);
 }

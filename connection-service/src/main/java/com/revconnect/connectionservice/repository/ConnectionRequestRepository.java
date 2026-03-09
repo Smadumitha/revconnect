@@ -3,6 +3,7 @@ package com.revconnect.connectionservice.repository;
 import com.revconnect.connectionservice.entity.ConnectionRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.util.Optional;
 
 public interface ConnectionRequestRepository
         extends JpaRepository<ConnectionRequest, Long> {
@@ -19,4 +20,7 @@ public interface ConnectionRequestRepository
 
     List<ConnectionRequest> findBySenderIdAndStatus(Long senderId, String status);
 
+    Optional<ConnectionRequest> findBySenderIdAndReceiverIdAndStatus(Long senderId, Long receiverId, String status);
+
+    Optional<ConnectionRequest> findBySenderIdAndReceiverId(Long senderId, Long receiverId);
 }

@@ -12,4 +12,8 @@ public interface AnalyticsRepository extends JpaRepository<Analytics, Long> {
     Optional<Analytics> findByPostIdAndDate(Long postId, LocalDate date);
 
     List<Analytics> findByPostIdOrderByDateAsc(Long postId);
+
+    List<Analytics> findByUserId(Long userId);
+
+    Optional<Analytics> findByUserIdAndPostIdIsNullAndDate(Long userId, LocalDate date);
 }

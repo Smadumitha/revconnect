@@ -12,4 +12,7 @@ public interface UserClient {
     @PostMapping("/api/users")
     UserProfileResponse createUserProfile(@RequestBody CreateUserProfileRequest request);
 
+    @org.springframework.web.bind.annotation.GetMapping("/api/users/username/{username}")
+    UserProfileResponse getUserByUsername(@org.springframework.web.bind.annotation.PathVariable("username") String username);
+
 }

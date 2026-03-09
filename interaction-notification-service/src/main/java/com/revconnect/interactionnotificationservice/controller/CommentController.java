@@ -30,13 +30,16 @@ public class CommentController {
         return ResponseEntity.ok(ApiResponse.success("Success", result));
     }
 
+    // CHANGED: Returns List<Comment> not Page<Comment> for simpler frontend integration
     @GetMapping("/post/{postId}")
-    public ResponseEntity<ApiResponse<Page<Comment>>> getPostComments(
-            @PathVariable Long postId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Comment> result = commentService.getPostComments(postId, pageable);
+    public ResponseEntity<ApiResponse<java.util.List<Comment>>> getPostComments(
+            @PathVariable Long postId) {
+        java.util.List<Comment> result = commentService.getPostCommentsList(postId);
         return ResponseEntity.ok(ApiResponse.success("Success", result));
+    }
+
+    @GetMapping("/count")
+    public long getCommentCount(@RequestParam Long postId) {
+        return commentService.getCommentCount(postId);
     }
 }

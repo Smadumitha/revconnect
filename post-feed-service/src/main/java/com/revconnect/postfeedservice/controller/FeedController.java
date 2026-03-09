@@ -26,22 +26,22 @@ public class FeedController {
     }
     // Trending Posts
     @GetMapping("/trending")
-    public List<PostResponse> trendingPosts() {
+    public List<PostResponse> trendingPosts(@RequestParam(required = false) Long userId) {
 
-        return feedService.getTrendingPosts();
+        return feedService.getTrendingPosts(userId);
     }
 
     // Search Posts By Hashtag
     @GetMapping("/hashtag")
-    public List<PostResponse> searchByHashtag(@RequestParam String tag) {
+    public List<PostResponse> searchByHashtag(@RequestParam String tag, @RequestParam(required = false) Long userId) {
 
-        return feedService.searchByHashtag(tag);
+        return feedService.searchByHashtag(tag, userId);
     }
 
     // Promotional Posts
     @GetMapping("/promotional")
-    public List<PostResponse> promotionalPosts() {
+    public List<PostResponse> promotionalPosts(@RequestParam(required = false) Long userId) {
 
-        return feedService.getPromotionalPosts();
+        return feedService.getPromotionalPosts(userId);
     }
 }

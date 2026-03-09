@@ -77,4 +77,14 @@ public class CommentServiceImpl implements CommentService {
     public Page<Comment> getPostComments(Long postId, Pageable pageable) {
         return commentRepository.findByPostIdAndParentCommentIdIsNull(postId, pageable);
     }
+
+    @Override
+    public long getCommentCount(Long postId) {
+        return commentRepository.countByPostId(postId);
+    }
+
+    @Override
+    public java.util.List<Comment> getPostCommentsList(Long postId) {
+        return commentRepository.findByPostIdOrderByCreatedAtAsc(postId);
+    }
 }

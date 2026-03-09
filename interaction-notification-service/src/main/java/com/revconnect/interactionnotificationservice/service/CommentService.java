@@ -12,4 +12,8 @@ public interface CommentService {
     String deleteComment(Long commentId);
 
     Page<Comment> getPostComments(Long postId, Pageable pageable);
+
+    long getCommentCount(Long postId);
+
+    java.util.List<Comment> getPostCommentsList(Long postId);
 }

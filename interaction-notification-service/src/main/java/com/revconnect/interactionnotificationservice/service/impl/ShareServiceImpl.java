@@ -69,9 +69,16 @@ public class ShareServiceImpl implements ShareService {
         }
 
         shareRepository.delete(existingShare.get());
-
-        // Note: Can send an UNSHARE event if analytics tracks it, but we won't for now.
-
         return "Share removed successfully";
+    }
+
+    @Override
+    public long getShareCount(Long postId) {
+        return shareRepository.countByPostId(postId);
+    }
+
+    @Override
+    public boolean hasShared(Long userId, Long postId) {
+        return shareRepository.existsByUserIdAndPostId(userId, postId);
     }
 }

@@ -17,12 +17,13 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class PostService {
 
+    private final PostHashtagRepository postHashtagRepository;
+    private final com.revconnect.postfeedservice.client.InteractionClient interactionClient;
+    private final com.revconnect.postfeedservice.client.UserClient userClient;
     private final PostRepository postRepository;
     private final HashtagRepository hashtagRepository;
     private final ProductTagRepository productTagRepository;
     private final ScheduledPostRepository scheduledPostRepository;
-    private  final PostHashtagRepository postHashtagRepository;
-
 
     public PostResponse createPost(PostRequest request) {
 
@@ -55,6 +56,9 @@ public class PostService {
 
             postHashtagRepository.save(postHashtag);
         }
+        
+        // ---------- PRODUCT TAG LOGIC ----------
+        saveProductTags(savedPost, request);
 
         // ---------- SCHEDULING LOGIC ----------
         if (request.getScheduledAt() != null) {
@@ -96,25 +100,81 @@ public class PostService {
     }
 
     // Get Post By ID
-    public PostResponse getPostById(Long id) {
+    public PostResponse getPostById(Long id, Long currentUserId) {
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        return mapToResponse(post);
+        return toResponse(post, currentUserId);
+    }
+    
+    public PostResponse getPostById(Long id) {
+        return getPostById(id, null);
     }
 
     // Entity → DTO mapper
-    private PostResponse mapToResponse(Post post) {
+    public PostResponse toResponse(Post post, Long currentUserId) {
+        long likesCount = 0;
+        long commentsCount = 0;
+        long sharesCount = 0;
+        boolean isLiked = false;
+        boolean isShared = false;
+        com.revconnect.postfeedservice.dto.AuthorDTO author = null;
+        
+        try {
+            likesCount = interactionClient.getLikeCount(post.getId());
+            commentsCount = interactionClient.getCommentCount(post.getId());
+            sharesCount = interactionClient.getShareCount(post.getId());
+            
+            if (currentUserId != null) {
+                isLiked = interactionClient.hasLiked(currentUserId, post.getId());
+                isShared = interactionClient.hasShared(currentUserId, post.getId());
+            }
+
+            // Fetch author info
+            author = userClient.getUserById(post.getUserId());
+        } catch (Exception e) {
+            // Log or ignore — keep counts at 0, author null
+        }
+
+        // FETCH HASHTAGS MANUALLY FROM REPOSITORY
+        List<String> hashtags = postHashtagRepository.findByPostId(post.getId()).stream()
+                .map(ph -> hashtagRepository.findById(ph.getHashtagId()).map(Hashtag::getTag).orElse(""))
+                .filter(tag -> !tag.isEmpty())
+                .toList();
+
+        // FETCH PRODUCT TAGS MANUALLY FROM REPOSITORY
+        List<String> productTags = productTagRepository.findByPostId(post.getId()).stream()
+                .map(ProductTag::getProductName)
+                .toList();
+
         return PostResponse.builder()
                 .id(post.getId())
                 .userId(post.getUserId())
                 .content(post.getContent())
                 .mediaUrl(post.getMediaUrl())
+                .type(post.getType() != null ? post.getType() : "TEXT")
+                .status(post.getStatus() != null ? post.getStatus() : "PUBLISHED")
                 .promotional(post.getPromotional())
                 .pinned(post.getPinned())
-                .createdAt(post.getCreatedAt())
+                .ctaText(post.getCtaText())
+                .ctaUrl(post.getCtaUrl())
+                .hashtags(hashtags)
+                .productTags(productTags)
+                .likesCount((int)likesCount)
+                .commentsCount((int)commentsCount)
+                .sharesCount((int)sharesCount)
+                .isLiked(isLiked)
+                .isShared(isShared)
+                .author(author)
+                .scheduledAt(post.getScheduledAt() != null ? post.getScheduledAt().toString() : null)
+                .createdAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : null)
+                .updatedAt(post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null)
                 .build();
+    }
+
+    private PostResponse mapToResponse(Post post) {
+        return toResponse(post, null);
     }
 
     private List<String> extractHashtags(String content) {
@@ -144,6 +204,8 @@ public class PostService {
             PostHashtag postHashtag = new PostHashtag();
             postHashtag.setPostId(post.getId());
             postHashtag.setHashtagId(hashtag.getId());
+            
+            postHashtagRepository.save(postHashtag);
 
         }
     }
@@ -180,13 +242,20 @@ public class PostService {
 
         return post.getUserId();
     }
-    public List<PostResponse> getPostsByUser(Long userId){
+    public List<PostResponse> getPostsByUser(Long userId, Long currentUserId){
 
         List<Post> posts = postRepository.findByUserId(userId);
 
         return posts.stream()
-                .map(this::mapToResponse)
+                .map(p -> toResponse(p, currentUserId))
                 .toList();
+    }
+
+    public void updateMediaUrl(Long postId, String url) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        post.setMediaUrl(url);
+        postRepository.save(post);
     }
 
 }

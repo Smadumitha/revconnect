@@ -1,4 +1,4 @@
-package com.revconnect.authservice.dto;
+package com.revconnect.postfeedservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,13 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileResponse {
-    private Long userId;
+public class AuthorDTO {
+    private Long id;
     private String username;
     private String displayName;
-    private String bio;
-    private String location;
-    private String website;
     private String profilePicture;
-    private Boolean isPrivate;
+    private String role;
 }

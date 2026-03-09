@@ -4,6 +4,8 @@ import lombok.Data;
 public class UserProfileResponse {
     private Long userId;
     private String username;
+    private String displayName;
+    private String role;
     private String bio;
     private String location;
     private String website;

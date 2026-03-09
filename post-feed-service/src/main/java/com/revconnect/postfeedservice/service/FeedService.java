@@ -17,6 +17,7 @@ public class FeedService {
     private final PostRepository postRepository;
     private final ConnectionClient connectionClient;
     private final HashtagRepository hashtagRepository;
+    private final PostService postService;
 
     public List<PostResponse> getHomeFeed(Long userId){
 
@@ -33,45 +34,40 @@ public class FeedService {
         List<Post> posts = postRepository.findByUserIdIn(followingIds);
 
         return posts.stream()
-                .map(this::mapToResponse)
+                .map(p -> postService.toResponse(p, userId))
                 .toList();
     }
-    public List<PostResponse> getTrendingPosts(){
+
+    public List<PostResponse> getTrendingPosts(Long userId){
 
         List<Post> posts = postRepository.findTop10ByOrderByCreatedAtDesc();
 
         return posts.stream()
-                .map(this::mapToResponse)
+                .map(p -> postService.toResponse(p, userId))
                 .toList();
     }
-    public List<PostResponse> searchByHashtag(String tag){
+    public List<PostResponse> searchByHashtag(String tag, Long userId){
 
         List<Post> posts = postRepository.findPostsByHashtag(tag);
 
         return posts.stream()
-                .map(this::mapToResponse)
+                .map(p -> postService.toResponse(p, userId))
                 .toList();
     }
-    public List<PostResponse> getPromotionalPosts(){
+    public List<PostResponse> getPromotionalPosts(Long userId){
 
         return postRepository.findByPromotionalTrue()
                 .stream()
-                .map(this::mapToResponse)
+                .map(p -> postService.toResponse(p, userId))
                 .toList();
     }
 
-    private PostResponse mapToResponse(Post post) {
-        return PostResponse.builder()
-                .id(post.getId())
-                .userId(post.getUserId())
-                .content(post.getContent())
-                .mediaUrl(post.getMediaUrl())
-                .promotional(post.getPromotional())
-                .pinned(post.getPinned())
-                .createdAt(post.getCreatedAt())
-                .build();
-    }
     public List<String> getTrendingTags(){
-        return hashtagRepository.findTrendingTags();
+        List<String> tags = hashtagRepository.findTrendingTags();
+        if (tags.size() < 3) {
+            // Static fallbacks
+            return List.of("RevConnect", "Tech", "Business", "Innovation");
+        }
+        return tags;
     }
 }

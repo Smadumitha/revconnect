@@ -52,8 +52,6 @@ public class InteractionServiceImpl implements InteractionService {
 
         interactionRepository.save(interaction);
 
-        interactionEventProducer.sendInteractionEvent(new InteractionEvent(postId, userId, "LIKE"));
-
         // Send event for analytics
         interactionEventProducer.sendInteractionEvent(
                 new InteractionEvent(postId, userId, "LIKE")
@@ -68,8 +66,8 @@ public class InteractionServiceImpl implements InteractionService {
         return "Post liked successfully";
     }
 
+    @Override
     public String unlikePost(Long userId, Long postId) {
-
         Optional<Interaction> existingLike = interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
 
         if (existingLike.isEmpty()) {
@@ -79,7 +77,16 @@ public class InteractionServiceImpl implements InteractionService {
         interactionRepository.delete(existingLike.get());
 
         interactionEventProducer.sendInteractionEvent(new InteractionEvent(postId, userId, "UNLIKE"));
-
         return "Post unliked successfully";
+    }
+
+    @Override
+    public long getLikeCount(Long postId) {
+        return interactionRepository.countByPostIdAndType(postId, "LIKE");
+    }
+
+    @Override
+    public boolean hasLiked(Long userId, Long postId) {
+        return interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE").isPresent();
     }
 }

@@ -1,8 +1,17 @@
 package com.revconnect.userservice.dto;
 
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpdateUserProfileRequest {
+    private String displayName;
 
     @Size(max = 500, message = "Bio cannot exceed 500 characters")
     private String bio;
@@ -15,38 +24,10 @@ public class UpdateUserProfileRequest {
 
     private Boolean isPrivate;
 
-    public UpdateUserProfileRequest() {
-    }
-
-    public String getBio() {
-        return bio;
-    }
-
-    public void setBio(String bio) {
-        this.bio = bio;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public String getWebsite() {
-        return website;
-    }
-
-    public void setWebsite(String website) {
-        this.website = website;
-    }
-
-    public Boolean getIsPrivate() {
-        return isPrivate;
-    }
-
-    public void setIsPrivate(Boolean isPrivate) {
-        this.isPrivate = isPrivate;
-    }
+    // Extended profile fields
+    private String category;
+    private String industry;
+    private String businessAddress;
+    private String businessHours;
+    private String contactEmail;
 }
