@@ -1,0 +1,181 @@
+# Frontend–Backend Compatibility Report
+
+> ✅ = Compatible | ❌ = Mismatch / Missing | ⚠️ = Partial / Needs Attention
+
+---
+
+## 1. Proxy Configuration ✅
+
+[proxy.conf.json](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/proxy.conf.json) routes `/api` to `http://localhost:8080`.
+
+**Problem:** The proxy only forwards paths starting with `/api`, but several backend routes don't start with `/api`:
+- Auth service routes: `/auth/...`
+- Post-feed routes: `/posts/...` and `/feed/...`
+- Connection routes: `/connections/...`
+
+**Suggested Fix:** Update [proxy.conf.json](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/proxy.conf.json) to add routing rules for all path prefixes:
+```json
+{
+  "/api": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/auth": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/posts": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/feed": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/connections": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true }
+}
+```
+
+---
+
+## 2. Auth Service ([auth.service.ts](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/auth.service.ts)) ❌
+
+| Frontend Call | Frontend URL | Backend Actual URL | Status |
+|---|---|---|---|
+| [register()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/auth-service/src/main/java/com/revconnect/authservice/controller/AuthController.java#19-25) | `POST /api/auth/register` | `POST /auth/register` | ❌ Wrong prefix |
+| [login()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/auth.service.ts#23-28) | `POST /api/auth/login` | `POST /auth/login` | ❌ Wrong prefix |
+| [getSecurityQuestion()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/auth-service/src/main/java/com/revconnect/authservice/controller/AuthController.java#48-54) | `GET /api/auth/security-question/{email}` | `GET /auth/security-question/{username}` | ❌ Wrong prefix + param name |
+| [verifySecurityAnswer()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/auth.service.ts#65-68) | `POST /api/auth/verify-security-answer` | `POST /auth/validate-answer` | ❌ Wrong path + prefix |
+| [logout()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/auth-service/src/main/java/com/revconnect/authservice/controller/AuthController.java#40-47) | Not calling backend | `POST /auth/logout` | ⚠️ Only clears localStorage, no backend call |
+| refresh token | Not implemented | `POST /auth/refresh` | ⚠️ Not implemented in frontend |
+| reset password | Not implemented | `POST /auth/reset-password` | ⚠️ Not implemented in frontend |
+
+**Suggested Fixes:**
+- Change all `/api/auth/...` to `/auth/...`
+- Rename [verifySecurityAnswer()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/auth.service.ts#65-68) URL from `/api/auth/verify-security-answer` → `/auth/validate-answer`
+- The [getSecurityQuestion()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/auth-service/src/main/java/com/revconnect/authservice/controller/AuthController.java#48-54) call passes `email` but backend uses `username` — make sure you pass `username`
+
+**Request Body Mismatch — Login:**
+```
+Frontend sends:   { "usernameOrEmail": "...", "password": "..." }
+Backend expects:  { "identifier": "...", "password": "..." }
+```
+Rename the field `usernameOrEmail` → `identifier` in the login payload.
+
+**Response Wrapper Mismatch:**
+- Frontend expects responses wrapped in `ApiResponse<T>` (with `success`, `data`, `message`, `timestamp` fields)
+- Backend `auth-service` returns [AuthResponse](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/shared/models/models.ts#70-81) **directly** (NOT wrapped in [ApiResponse](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/shared/models/models.ts#82-88))
+- **Fix:** Either unwrap in the service (use [res](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/auth-service/src/main/java/com/revconnect/authservice/controller/AuthController.java#33-39) instead of `res.data`) or update the frontend model
+
+---
+
+## 3. User Service ([user.service.ts](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts)) ❌
+
+| Frontend Call | Frontend URL | Backend Actual URL | Status |
+|---|---|---|---|
+| [getMe()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#10-13) | `GET /api/users/me` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getUserById()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#14-17) | `GET /api/users/{id}` | `GET /api/users/{userId}` | ✅ Compatible |
+| [getUserByUsername()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#18-21) | `GET /api/users/username/{username}` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [updateProfile()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#22-25) | `PUT /api/users/{id}` | `PUT /api/users/{userId}` | ✅ Compatible |
+| [searchUsers()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#26-29) | `GET /api/users/search?q=...` | `GET /api/users/search?keyword=...` | ❌ Wrong query param (`q` vs `keyword`) |
+| [followUser()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#30-33) | `POST /api/users/{id}/follow` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [unfollowUser()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#34-37) | `DELETE /api/users/{id}/follow` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getFollowers()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/connection-service/src/main/java/com/revconnect/connectionservice/controller/ConnectionController.java#44-48) | `GET /api/users/{id}/followers` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getFollowing()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#42-45) | `GET /api/users/{id}/following` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getSuggestions()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/user.service.ts#46-49) | `GET /api/users/suggestions` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+
+**Suggested Fixes:**
+- Fix search query param: change `?q=` → `?keyword=`
+- Follow/unfollow/followers/following are handled by the **Connection Service**, not User Service. Re-route these calls to `/connections/...`
+
+---
+
+## 4. Connection Service ([connection.service.ts](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts)) ❌
+
+| Frontend Call | Frontend URL | Backend Actual URL | Status |
+|---|---|---|---|
+| [sendRequest()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts#10-13) | `POST /api/connections/request/{recipientId}` | `POST /connections/request` (body: `{senderId, receiverId}`) | ❌ Wrong path + wrong method pattern |
+| [acceptRequest()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/connection-service/src/main/java/com/revconnect/connectionservice/controller/ConnectionController.java#34-38) | `PUT /api/connections/{id}/accept` | `PUT /connections/accept/{requestId}` | ❌ Wrong path structure |
+| [rejectRequest()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts#18-21) | `PUT /api/connections/{id}/reject` | `PUT /connections/reject/{requestId}` | ❌ Wrong path structure |
+| [removeConnection()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts#22-25) | `DELETE /api/connections/{id}` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getConnections()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts#26-29) | `GET /api/connections` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getPendingReceived()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts#30-33) | `GET /api/connections/pending/received` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getPendingSent()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts#34-37) | `GET /api/connections/pending/sent` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+
+**Suggested Fixes:**
+- Fix URL prefix: `/api/connections/...` → `/connections/...`
+- [sendRequest()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/connection.service.ts#10-13) body: backend expects a JSON body `{ "senderId": X, "receiverId": Y }`, not a URL path param
+- Fix path patterns for accept/reject:
+  - Frontend: `PUT /api/connections/{id}/accept` → Backend: `PUT /connections/accept/{requestId}`
+  - Frontend: `PUT /api/connections/{id}/reject` → Backend: `PUT /connections/reject/{requestId}`
+- For followers/following, use the actual backend endpoints: `GET /connections/followers/{userId}` and `GET /connections/following/{userId}`
+
+---
+
+## 5. Post Service ([post.service.ts](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts)) ❌
+
+| Frontend Call | Frontend URL | Backend Actual URL | Status |
+|---|---|---|---|
+| [createPost()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/post-feed-service/src/main/java/com/revconnect/postfeedservice/controller/PostController.java#21-25) | `POST /api/posts` | `POST /posts` | ❌ Wrong prefix |
+| [updatePost()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#14-17) | `PUT /api/posts/{id}` | `PUT /posts/{id}` | ❌ Wrong prefix |
+| [deletePost()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#18-21) | `DELETE /api/posts/{id}` | `DELETE /posts/{id}` | ❌ Wrong prefix |
+| [getPost()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/post-feed-service/src/main/java/com/revconnect/postfeedservice/controller/PostController.java#38-42) | `GET /api/posts/{id}` | `GET /posts/{id}` | ❌ Wrong prefix |
+| [getFeed()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#26-30) | `GET /api/posts/feed?page=&size=` | `GET /feed/home?userId=` | ❌ Wrong URL + different parameter |
+| [getTrending()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#31-35) | `GET /api/posts/trending?page=&size=` | `GET /feed/trending` | ❌ Wrong URL |
+| [getUserPosts()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#36-40) | `GET /api/posts/user/{userId}` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [getPostsByHashtag()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#41-45) | `GET /api/posts/hashtag/{hashtag}` | `GET /feed/hashtag?tag=` | ❌ Wrong URL format (path vs query param) |
+| [likePost()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/interaction-notification-service/src/main/java/com/revconnect/interactionnotificationservice/controller/InteractionController.java#17-23) | `POST /api/posts/{id}/like` | `POST /api/interactions/like` (body: `{userId, postId}`) | ❌ Wrong URL completely |
+| [unlikePost()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/interaction-notification-service/src/main/java/com/revconnect/interactionnotificationservice/controller/InteractionController.java#24-31) | `DELETE /api/posts/{id}/like` | `DELETE /api/interactions/unlike?userId=&postId=` | ❌ Wrong URL completely |
+| [sharePost()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#54-58) | `POST /api/posts/{id}/share` | `POST /api/shares` (body: `{userId, postId}`) | ❌ Wrong URL completely |
+| [addComment()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#59-62) | `POST /api/posts/{postId}/comments` | `POST /api/comments` (body: `{userId, postId, content}`) | ❌ Wrong URL |
+| [getComments()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#63-66) | `GET /api/posts/{postId}/comments` | `GET /api/comments/post/{postId}` | ❌ Wrong URL |
+| [deleteComment()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#67-70) | `DELETE /api/posts/comments/{commentId}` | `DELETE /api/comments/{commentId}` | ❌ Wrong URL |
+| [getTrendingTags()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/post.service.ts#71-74) | `GET /api/posts/trending-tags` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+
+**Suggested Fixes:**
+- Remove `/api` prefix from all `/api/posts/...` → `/posts/...`
+- Route feed, trending, hashtag calls to the correct `/feed/...` backend endpoints
+- Likes → Use `/api/interactions/like` and `/api/interactions/unlike`
+- Shares → Use `/api/shares`
+- Comments → Use `/api/comments` and `/api/comments/post/{postId}`
+
+---
+
+## 6. Notification Service ([notification.service.ts](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/notification.service.ts)) ❌
+
+| Frontend Call | Frontend URL | Backend Actual URL | Status |
+|---|---|---|---|
+| [getNotifications()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/notification.service.ts#12-16) | `GET /api/notifications?page=&size=` | `GET /api/notifications/{userId}` (path variable!) | ❌ Wrong URL structure |
+| [getUnreadCount()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/notification.service.ts#17-20) | `GET /api/notifications/unread-count` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+| [markAsRead()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/interaction-notification-service/src/main/java/com/revconnect/interactionnotificationservice/controller/NotificationController.java#25-30) | `PUT /api/notifications/{id}/read` | `PUT /api/notifications/read/{notificationId}` | ❌ Path is reversed |
+| [markAllAsRead()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/notification.service.ts#25-28) | `PUT /api/notifications/read-all` | ❌ Does NOT exist in backend | ❌ Missing endpoint |
+
+**Suggested Fixes:**
+- [getNotifications()](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/core/services/notification.service.ts#12-16): Change to `GET /api/notifications/{userId}` — userId needs to be passed in the URL, not as a query param
+- [markAsRead()](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/interaction-notification-service/src/main/java/com/revconnect/interactionnotificationservice/controller/NotificationController.java#25-30): Change `/api/notifications/${id}/read` → `/api/notifications/read/${id}`
+
+---
+
+## 7. Frontend Models vs Backend Response ⚠️
+
+| Frontend Model | Issue |
+|---|---|
+| `User.id` | Backend returns `userId`, not [id](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/auth-service/src/main/java/com/revconnect/authservice/controller/AuthController.java#55-62) |
+| `User.displayName` | Backend [UserProfile](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/user-service/src/main/java/com/revconnect/userservice/controller/UserProfileController.java#34-38) has no `displayName` field |
+| `User.followersCount` / `followingCount` | Not present in backend `UserProfileResponse` |
+| `User.isFollowing` | Not present in backend response |
+| `Post.author` (User object) | Backend [PostResponse](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/post-feed-service/src/main/java/com/revconnect/postfeedservice/dto/PostResponse.java#8-21) only returns `userId`, not full user object |
+| `Post.type` / `Post.status` | Not present in backend [PostResponse](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/post-feed-service/src/main/java/com/revconnect/postfeedservice/dto/PostResponse.java#8-21) |
+| `Post.likesCount` / `commentsCount` / `isLiked` | Not present in backend [PostResponse](file:///c:/Users/Nagu/Rev-Micro-Final/revconnect/post-feed-service/src/main/java/com/revconnect/postfeedservice/dto/PostResponse.java#8-21) |
+| `ApiResponse<T>` wrapper | Auth-service does NOT wrap responses — user-service, connection-service, interaction-service do NOT use [ApiResponse](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/shared/models/models.ts#82-88) wrapper |
+
+---
+
+## 8. JWT Interceptor ✅
+
+The JWT interceptor correctly attaches the `Authorization: Bearer <token>` header to all outgoing HTTP requests. **This is compatible with standard Spring Security JWT setup.**
+
+---
+
+## Summary of Issues
+
+| Category | ✅ OK | ❌ Broken |
+|---|---|---|
+| Proxy Config | Partial | Missing route prefixes |
+| Auth URLs | 0 | 7 |
+| User URLs | 2 | 8 |
+| Connection URLs | 0 | 7 |
+| Post URLs | 0 | 15 |
+| Notification URLs | 0 | 4 |
+| Response Models | Partial mismatch | [ApiResponse](file:///C:/Users/Nagu/OneDrive/Desktop/Frontend-p3/src-1/src/app/shared/models/models.ts#82-88) wrapper inconsistency |
+| JWT Interceptor | ✅ | — |
+
+> **Overall:** The frontend was designed for a different API contract than what the backend implements. The main issues are: wrong URL prefixes (`/api/posts` vs `/posts`), wrong URL structures for connections/interactions/comments, missing backend endpoints that the frontend depends on, and field name mismatches in request/response payloads.

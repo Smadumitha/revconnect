@@ -1,0 +1,128 @@
+<app-navbar></app-navbar>
+<div class="notif-page">
+    <div class="notif-container">
+        <div class="notif-header card">
+            <div class="notif-title-row">
+                <h1><i class="fas fa-bell"></i> Notifications</h1>
+                <div class="header-actions">
+                    <button class="btn btn-ghost btn-sm" (click)="showPrefs.set(!showPrefs())">
+                        <i class="fas fa-cog"></i> Preferences
+                    </button>
+                    <button class="btn btn-outline btn-sm" (click)="markAllRead()" [disabled]="markingAll()">
+                        <i class="fas fa-check-double"></i>
+                        {{ markingAll() ? 'Marking...' : 'Mark All Read' }}
+                    </button>
+                </div>
+            </div>
+            <div class="notif-tabs">
+                <button class="ntab" [class.active]="filter() === 'all'" (click)="filter.set('all')">
+                    All <span class="ntab-badge" *ngIf="getUnreadCount() > 0">{{ getUnreadCount() }}</span>
+                </button>
+                <button class="ntab" [class.active]="filter() === 'unread'"
+                    (click)="filter.set('unread')">Unread</button>
+                <button class="ntab" [class.active]="filter() === 'connections'" (click)="filter.set('connections')">
+                    <i class="fas fa-users"></i> Connections
+                </button>
+                <button class="ntab" [class.active]="filter() === 'posts'" (click)="filter.set('posts')">
+                    <i class="fas fa-heart"></i> Posts
+                </button>
+            </div>
+        </div>
+
+        <div class="prefs-panel card" *ngIf="showPrefs() && prefs()">
+            <div class="prefs-header">
+                <h3><i class="fas fa-sliders-h"></i> Notification Preferences</h3>
+                <button class="btn btn-ghost btn-sm" (click)="showPrefs.set(false)"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="prefs-grid">
+                <div class="pref-item" *ngFor="let p of prefOptions">
+                    <div class="pref-info">
+                        <div class="pref-icon"><i [class]="p.icon"></i></div>
+                        <div>
+                            <div class="pref-label">{{ p.label }}</div>
+                            <div class="pref-desc">{{ p.desc }}</div>
+                        </div>
+                    </div>
+                    <div class="toggle-switch" [class.on]="getPref(p.key)" (click)="togglePref(p.key)">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="prefs-footer">
+                <button class="btn btn-primary btn-sm" (click)="savePrefs()" [disabled]="savingPrefs()">
+                    <i class="fas fa-save"></i> {{ savingPrefs() ? 'Saving...' : 'Save Preferences' }}
+                </button>
+            </div>
+        </div>
+
+        <div *ngIf="loading()" class="spinner"></div>
+
+        <div *ngIf="!loading() && getFiltered().length === 0" class="empty-state card">
+            <i class="fas fa-bell-slash empty-icon"></i>
+            <h3>No notifications</h3>
+            <p>{{ filter() === 'unread' ? "You're all caught up!" : 'Notifications will appear here' }}</p>
+        </div>
+
+        <div class="notif-list" *ngIf="!loading()">
+            <div class="notif-item card" *ngFor="let n of getFiltered(); trackBy: trackNotif" [class.unread]="!n.read"
+                (click)="markRead(n)">
+                <div [class]="getIconClass(n.type)">
+                    <i [class]="getIcon(n.type)"></i>
+                </div>
+                <div class="notif-body">
+                    <div class="notif-sender" *ngIf="n.sender">
+                        <strong>{{ n.sender.displayName }}</strong>
+                        <span class="notif-username">&#64;{{ n.sender.username }}</span>
+                    </div>
+                    <div class="notif-message">{{ n.message }}</div>
+                    <div class="notif-time"><i class="far fa-clock"></i> {{ timeAgo(n.createdAt) }}</div>
+                </div>
+                <div class="notif-meta">
+                    <div class="unread-dot" *ngIf="!n.read"></div>
+                    <span class="notif-type-badge" [class]="'type-badge-' + getBadgeClass(n.type)">{{
+                        getTypeLabel(n.type) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="!loading() && hasMore()" class="load-more-container">
+            <button class="btn btn-outline w-full" (click)="loadMore()" [disabled]="loadingMore()">
+                <i class="fas fa-chevron-down"></i> {{ loadingMore() ? 'Loading...' : 'Load More' }}
+            </button>
+        </div>
+    </div>
+
+    <aside class="notif-sidebar hide-tablet">
+        <div class="card stats-card">
+            <h3 class="sidebar-title"><i class="fas fa-chart-bar"></i> Activity</h3>
+            <div class="activity-stats">
+                <div class="activity-stat">
+                    <span class="astat-val">{{ notifications().length }}</span>
+                    <span class="astat-label">Total</span>
+                </div>
+                <div class="activity-stat">
+                    <span class="astat-val text-primary">{{ getUnreadCount() }}</span>
+                    <span class="astat-label">Unread</span>
+                </div>
+                <div class="activity-stat">
+                    <span class="astat-val text-danger">{{ getCountByType('POST_LIKED') }}</span>
+                    <span class="astat-label">Likes</span>
+                </div>
+                <div class="activity-stat">
+                    <span class="astat-val text-info">{{ getCountByType('CONNECTION_REQUEST') }}</span>
+                    <span class="astat-label">Requests</span>
+                </div>
+            </div>
+        </div>
+        <div class="card tips-card">
+            <h3 class="sidebar-title"><i class="fas fa-lightbulb"></i> Tips</h3>
+            <div class="tip-item"><i class="fas fa-check-circle text-success"></i><span>Click a notification to mark it
+                    as read</span></div>
+            <div class="tip-item"><i class="fas fa-bell text-primary"></i><span>Customize alerts in Preferences</span>
+            </div>
+            <div class="tip-item"><i class="fas fa-filter text-warning"></i><span>Use tabs to filter by type</span>
+            </div>
+        </div>
+    </aside>
+</div>

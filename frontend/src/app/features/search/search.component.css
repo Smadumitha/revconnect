@@ -1,0 +1,211 @@
+.search-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.search-header {
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #141322;
+    border: 1.5px solid #2d2b4e;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.search-bar i {
+    color: #6b6988;
+    font-size: 16px;
+}
+
+.search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #e8e6ff;
+    font-size: 16px;
+    outline: none;
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: #6b6988;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.ftab {
+    padding: 8px 18px;
+    border: 1.5px solid #2d2b4e;
+    border-radius: 30px;
+    background: none;
+    color: #9b99bb;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ftab:hover {
+    border-color: rgba(108, 99, 255, 0.5);
+    color: #e8e6ff;
+}
+
+.ftab.active {
+    border-color: #6c63ff;
+    background: rgba(108, 99, 255, 0.1);
+    color: #8b85ff;
+}
+
+.people-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.person-card {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+}
+
+.person-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    width: 100%;
+}
+
+.person-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 24px;
+    color: white;
+}
+
+.person-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: #e8e6ff;
+}
+
+.person-username {
+    font-size: 13px;
+    color: #9b99bb;
+}
+
+.person-role {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.role-personal {
+    background: rgba(108, 99, 255, 0.2);
+    color: #8b85ff;
+}
+
+.role-creator {
+    background: rgba(245, 166, 35, 0.2);
+    color: #f5a623;
+}
+
+.role-business {
+    background: rgba(78, 203, 113, 0.2);
+    color: #4ecb71;
+}
+
+.person-bio {
+    font-size: 13px;
+    color: #9b99bb;
+    line-height: 1.4;
+}
+
+.person-stats {
+    font-size: 12px;
+    color: #6b6988;
+}
+
+.person-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.discover-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.discover-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.discover-header h3 i {
+    color: #6c63ff;
+}
+
+.discover-header p {
+    color: #9b99bb;
+    font-size: 14px;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 40px;
+    color: #2d2b4e;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #2d2b4e;
+    border-top-color: #6c63ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 40px auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

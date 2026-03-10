@@ -1,0 +1,158 @@
+<app-navbar></app-navbar>
+<div class="connections-page">
+    <div class="connections-main">
+        <div class="page-header card">
+            <h1><i class="fas fa-users"></i> My Network</h1>
+            <p class="page-subtitle">Manage your professional network and connection requests</p>
+            <div class="tabs">
+                <button class="tab" [class.active]="tab() === 'connections'" (click)="tab.set('connections')">
+                    <i class="fas fa-handshake"></i> Connections
+                    <span class="count" *ngIf="connections().length > 0">{{ connections().length }}</span>
+                </button>
+                <button class="tab" [class.active]="tab() === 'pending'" (click)="tab.set('pending')">
+                    <i class="fas fa-inbox"></i> Received
+                    <span class="count pending-count" *ngIf="pendingReceived().length > 0">{{ pendingReceived().length
+                        }}</span>
+                </button>
+                <button class="tab" [class.active]="tab() === 'sent'" (click)="tab.set('sent')">
+                    <i class="fas fa-paper-plane"></i> Sent
+                    <span class="count" *ngIf="pendingSent().length > 0">{{ pendingSent().length }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Connections Tab -->
+        <div *ngIf="tab() === 'connections'">
+            <div *ngIf="loading()" class="spinner"></div>
+            <div *ngIf="!loading() && connections().length === 0" class="empty-state card">
+                <i class="fas fa-users empty-icon"></i>
+                <h3>No connections yet</h3>
+                <p>Start connecting with people to grow your network</p>
+                <a routerLink="/search" class="btn btn-primary btn-sm">
+                    <i class="fas fa-compass"></i> Discover People
+                </a>
+            </div>
+            <div class="user-grid">
+                <div class="user-card card" *ngFor="let c of connections()">
+                    <a [routerLink]="getConnectionUser(c)?.username ? ['/profile', getConnectionUser(c)?.username] : null"
+                        class="user-card-link">
+                        <div class="avatar-circle" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                            {{ getInitials(getConnectionUser(c)?.displayName || '?') }}
+                        </div>
+                        <div class="user-name">{{ getConnectionUser(c)?.displayName || 'User' }}</div>
+                        <div class="user-username" *ngIf="getConnectionUser(c)?.username">&#64;{{
+                            getConnectionUser(c)?.username }}</div>
+                        <div class="user-role"
+                            [class]="'role-' + (getConnectionUser(c)?.role || 'personal').toLowerCase()">
+                            {{ getConnectionUser(c)?.role || 'Personal' }}
+                        </div>
+                    </a>
+                    <button class="btn btn-ghost btn-sm remove-btn" (click)="removeConnection(c.id)">
+                        <i class="fas fa-user-minus"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Received Tab -->
+        <div *ngIf="tab() === 'pending'">
+            <div *ngIf="pendingReceived().length === 0" class="empty-state card">
+                <i class="fas fa-inbox empty-icon"></i>
+                <h3>No pending requests</h3>
+                <p>Connection requests you receive will appear here</p>
+            </div>
+            <div class="request-list">
+                <div class="request-card card" *ngFor="let c of pendingReceived()">
+                    <a *ngIf="c.requester" [routerLink]="['/profile', c.requester.username]" class="request-user">
+                        <div class="avatar-sm-circle" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                            {{ getInitials(c.requester.displayName || '?') }}
+                        </div>
+                        <div class="request-info">
+                            <div class="font-semibold">{{ c.requester.displayName }}</div>
+                            <div class="text-sm text-muted" *ngIf="c.requester.username">&#64;{{ c.requester.username }}
+                            </div>
+                            <div class="user-role-sm" *ngIf="c.requester.role"
+                                [class]="'role-' + (c.requester.role || 'personal').toLowerCase()">
+                                {{ c.requester.role }}
+                            </div>
+                        </div>
+                    </a>
+                    <div class="request-actions">
+                        <button class="btn btn-primary btn-sm" (click)="accept(c.id)">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                        <button class="btn btn-ghost btn-sm" (click)="reject(c.id)">
+                            <i class="fas fa-times"></i> Decline
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sent Requests Tab -->
+        <div *ngIf="tab() === 'sent'">
+            <div *ngIf="pendingSent().length === 0" class="empty-state card">
+                <i class="fas fa-paper-plane empty-icon"></i>
+                <h3>No sent requests</h3>
+                <p>Connection requests you've sent will appear here</p>
+            </div>
+            <div class="request-list">
+                <div class="request-card card" *ngFor="let c of pendingSent()">
+                    <a *ngIf="c.recipient"
+                        [routerLink]="c.recipient.username ? ['/profile', c.recipient.username] : null"
+                        class="request-user">
+                        <div class="avatar-sm-circle" [style.background]="'linear-gradient(135deg, #ff6584, #6c63ff)'">
+                            {{ getInitials(safeDisplayName(c.recipient)) }}
+                        </div>
+                        <div class="request-info">
+                            <div class="font-semibold">{{ safeDisplayName(c.recipient) }}</div>
+                            <div class="text-sm text-muted" *ngIf="c.recipient.username">&#64;{{ c.recipient.username }}
+                            </div>
+                            <div class="text-sm text-muted" *ngIf="!c.recipient.username">Pending response</div>
+                        </div>
+                    </a>
+                    <div *ngIf="!c.recipient" class="request-user">
+                        <div class="avatar-sm-circle" style="background: #2d2b4e">?</div>
+                        <div class="request-info">
+                            <div class="font-semibold">Loading...</div>
+                        </div>
+                    </div>
+                    <span class="badge badge-warning"><i class="fas fa-clock"></i> Sent</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="connections-sidebar hide-tablet">
+        <div class="card network-stats">
+            <h3 class="sidebar-title"><i class="fas fa-chart-pie"></i> Network Stats</h3>
+            <div class="nstat-list">
+                <div class="nstat">
+                    <span class="nstat-icon" style="color:#6c63ff"><i class="fas fa-handshake"></i></span>
+                    <div>
+                        <div class="nstat-val">{{ connections().length }}</div>
+                        <div class="nstat-label">Connections</div>
+                    </div>
+                </div>
+                <div class="nstat">
+                    <span class="nstat-icon" style="color:#ff6584"><i class="fas fa-inbox"></i></span>
+                    <div>
+                        <div class="nstat-val">{{ pendingReceived().length }}</div>
+                        <div class="nstat-label">Requests</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="sidebar-title"><i class="fas fa-search"></i> Grow Network</h3>
+            <p class="text-sm text-secondary" style="margin-bottom:14px">Discover new people and expand your connections
+            </p>
+            <a routerLink="/search" class="btn btn-primary btn-sm w-full" style="justify-content:center">
+                <i class="fas fa-compass"></i> Discover People
+            </a>
+        </div>
+    </aside>
+</div>

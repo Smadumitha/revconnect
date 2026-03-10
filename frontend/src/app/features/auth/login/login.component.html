@@ -1,0 +1,72 @@
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h1>RevConnect</h1>
+            <p>Connect. Create. Inspire.</p>
+        </div>
+        <div class="features">
+            <div class="feature-item">
+                <i class="fas fa-users"></i>
+                <span>Build your professional network</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Grow your personal brand</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-lightbulb"></i>
+                <span>Discover opportunities</span>
+            </div>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-card">
+            <h2>Welcome back</h2>
+            <p class="subtitle">Sign in to your account</p>
+
+            <div *ngIf="error()" class="error-msg">
+                <i class="fas fa-exclamation-circle"></i> {{ error() }}
+            </div>
+
+            <form (ngSubmit)="onLogin()">
+                <div class="form-group">
+                    <label class="form-label">Email or Username</label>
+                    <input class="form-input" type="text" placeholder="Enter email or username"
+                        [(ngModel)]="form.identifier" name="identifier" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="input-wrapper">
+                        <input class="form-input" [type]="showPass() ? 'text' : 'password'" placeholder="Enter password"
+                            [(ngModel)]="form.password" name="password" required>
+                        <button type="button" class="toggle-pass" (click)="showPass.set(!showPass())">
+                            <i [class]="showPass() ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                        </button>
+                    </div>
+                    <div style="text-align:right;margin-top:4px">
+                        <a routerLink="/auth/forgot-password"
+                            style="font-size:12px;color:var(--primary-light);text-decoration:none;font-weight:600">Forgot
+                            Password?</a>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-full" type="submit" [disabled]="loading()">
+                    <span *ngIf="!loading()"><i class="fas fa-sign-in-alt"></i> Sign In</span>
+                    <span *ngIf="loading()"><i class="fas fa-spinner fa-spin"></i> Signing in...</span>
+                </button>
+            </form>
+
+            <!-- Google Sign-In removed as per request -->
+
+            <p class="auth-link" style="margin-top: 20px;">
+                Don't have an account? <a routerLink="/auth/register">Create one</a>
+            </p>
+
+            <div class="demo-hint">
+                <strong>Demo:</strong> alice&#64;revconnect.com / password123
+            </div>
+        </div>
+    </div>
+</div>

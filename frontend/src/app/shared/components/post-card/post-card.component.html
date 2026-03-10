@@ -1,0 +1,247 @@
+<div class="post-card" [class.promoted]="post.type === 'PROMOTIONAL'" [class.pinned-post]="post.pinned">
+
+    <!-- Pinned indicator -->
+    <div class="pin-indicator" *ngIf="post.pinned">
+        <i class="fas fa-thumbtack"></i> Pinned Post
+    </div>
+
+    <!-- Shared/Repost indicator -->
+    <div class="shared-indicator" *ngIf="post.type === 'SHARE'">
+        <i class="fas fa-retweet"></i>
+        <a [routerLink]="['/profile', post.author?.username]">{{ post.author?.displayName }}</a> shared this
+    </div>
+
+    <!-- Promotional banner -->
+    <div class="promo-indicator" *ngIf="post.type === 'PROMOTIONAL'">
+        <i class="fas fa-bullhorn"></i> Sponsored
+    </div>
+
+    <!-- Post Header -->
+    <div class="post-header">
+        <a [routerLink]="['/profile', post.author?.username]" class="author-link">
+            <div class="avatar"
+                [style.background]="'linear-gradient(135deg, ' + getColor(post.author?.username || '') + ')'">
+                <img *ngIf="post.author?.profilePicture" [src]="post.author?.profilePicture" class="avatar-img">
+                <span *ngIf="!post.author?.profilePicture">{{ getInitials(post.author?.displayName || '') }}</span>
+            </div>
+            <div class="author-info">
+                <div class="author-name">
+                    {{ post.author?.displayName }}
+                    <span class="role-badge" [class]="'role-' + (post.author?.role || 'personal').toLowerCase()">
+                        {{ getRoleIcon(post.author?.role || '') }}
+                    </span>
+                </div>
+                <div class="author-meta">
+                    {{ post.author?.username ? '@' + post.author?.username : '' }} &middot; {{ timeAgo(post.createdAt)
+                    }}
+                    <span *ngIf="post.status === 'SCHEDULED'" class="scheduled-badge">
+                        <i class="fas fa-clock"></i> Scheduled
+                    </span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Post Owner Actions -->
+        <div class="post-owner-menu" *ngIf="isOwner()">
+            <button class="btn btn-ghost btn-icon" (click)="menuOpen.set(!menuOpen())" title="More options">
+                <i class="fas fa-ellipsis-h"></i>
+            </button>
+            <div class="owner-dropdown" *ngIf="menuOpen()">
+                <button class="dropdown-item" (click)="startEdit()">
+                    <i class="fas fa-edit"></i> Edit Post
+                </button>
+                <button class="dropdown-item text-warning" (click)="pinPost()" *ngIf="!post.pinned">
+                    <i class="fas fa-thumbtack"></i> Pin to Profile
+                </button>
+                <button class="dropdown-item text-warning" (click)="pinPost()" *ngIf="post.pinned">
+                    <i class="fas fa-thumbtack"></i> Unpin Post
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item text-danger" (click)="deletePost()">
+                    <i class="fas fa-trash"></i> Delete Post
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Mode -->
+    <div class="edit-area" *ngIf="editMode()">
+        <textarea [(ngModel)]="editContent" class="edit-textarea" rows="4"></textarea>
+        <div class="edit-actions">
+            <button class="btn btn-ghost btn-sm" (click)="cancelEdit()">Cancel</button>
+            <button class="btn btn-primary btn-sm" (click)="saveEdit()" [disabled]="saving()">
+                <i class="fas fa-save"></i> {{ saving() ? 'Saving...' : 'Save' }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Post Content -->
+    <div class="post-content" *ngIf="!editMode()">
+        <p class="content-text" [innerHTML]="safeContent(post.content)"></p>
+
+        <!-- Product Tags -->
+        <div class="product-tags" *ngIf="post.productTags && post.productTags.length > 0">
+            <span class="product-tag" *ngFor="let tag of post.productTags">
+                <i class="fas fa-tag"></i> {{ tag }}
+            </span>
+        </div>
+
+        <!-- Hashtags -->
+        <div class="hashtag-list" *ngIf="post.hashtags && post.hashtags.length > 0">
+            <span class="hashtag-chip" *ngFor="let tag of post.hashtags" (click)="onHashtagClick(tag)">
+                #{{ tag }}
+            </span>
+        </div>
+
+        <img *ngIf="post.mediaUrl" [src]="post.mediaUrl" class="post-image" alt="">
+
+        <!-- CTA Banner for Promotional -->
+        <div class="cta-banner" *ngIf="post.ctaText" (click)="post.ctaUrl ? openUrl(post.ctaUrl, $event) : null"
+            [style.cursor]="post.ctaUrl ? 'pointer' : 'default'">
+            <div class="cta-content">
+                <span class="cta-text">{{ post.ctaText }}</span>
+                <a *ngIf="post.ctaUrl" [href]="post.ctaUrl" target="_blank" class="btn btn-primary btn-sm"
+                    (click)="$event.stopPropagation()">
+                    {{ post.ctaText }} <i class="fas fa-external-link-alt"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Original post for reposts -->
+        <div class="original-post" *ngIf="post.originalPost">
+            <div class="original-header">
+                <i class="fas fa-retweet"></i> Original post by
+                <strong>{{ post.originalPost.author?.displayName }}</strong>
+            </div>
+            <p class="original-content">{{ post.originalPost.content }}</p>
+        </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="post-footer">
+        <button class="action-btn" [class.liked]="post.isLiked" (click)="onLike()">
+            <i [class]="post.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i>
+            <span>{{ post.likesCount || 0 }}</span>
+        </button>
+
+        <button class="action-btn" (click)="toggleComments()">
+            <i class="far fa-comment"></i>
+            <span>{{ post.commentsCount || 0 }}</span>
+        </button>
+
+        <button class="action-btn" [class.shared]="post.isShared" (click)="onShare()">
+            <i [class]="post.isShared ? 'fas fa-check-circle' : 'fas fa-retweet'"></i>
+            <span>{{ post.sharesCount || 0 }}</span>
+        </button>
+
+        <!-- Repost button -->
+        <button class="action-btn repost-btn" (click)="onRepost()" title="Repost with comment">
+            <i class="fas fa-quote-right"></i>
+            <span>Repost</span>
+        </button>
+
+        <!-- Analytics for creators/businesses owning the post -->
+        <button class="action-btn insights-btn" *ngIf="isOwner() && authService.currentUser()?.role !== 'PERSONAL'"
+            (click)="toggleAnalytics()">
+            <i class="fas fa-chart-line"></i>
+            <span>Insights</span>
+        </button>
+    </div>
+
+    <!-- Analytics Overlay -->
+    <div class="analytics-overlay" *ngIf="showAnalytics()">
+        <div class="analytics-header">
+            <h4><i class="fas fa-chart-bar"></i> Post Insights</h4>
+            <button class="btn btn-ghost btn-xs" (click)="showAnalytics.set(false)"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <div class="analytics-stats" *ngIf="!analyticsLoading()">
+            <div class="astat">
+                <span class="astat-label">Reach</span>
+                <span class="astat-val">{{ ((post.likesCount || 0) + (post.commentsCount || 0)) * 5 + 12 }}</span>
+            </div>
+            <div class="astat">
+                <span class="astat-label">Engagement</span>
+                <span class="astat-val">{{ (post.likesCount || 0) + (post.commentsCount || 0) }}</span>
+            </div>
+            <div class="astat">
+                <span class="astat-label">Shares</span>
+                <span class="astat-val">{{ post.sharesCount || 0 }}</span>
+            </div>
+            <div class="astat">
+                <span class="astat-label">Rate</span>
+                <span class="astat-val text-success">{{ getEngagementRate() }}%</span>
+            </div>
+        </div>
+        <div class="analytics-bar-chart" *ngIf="!analyticsLoading()">
+            <div class="bar-label">Engagement over time</div>
+            <div class="mini-bars">
+                <div class="mini-bar" *ngFor="let h of engagementHistory" [style.height]="h + '%'" [title]="h + '%'">
+                </div>
+            </div>
+        </div>
+        <div class="spinner-sm" *ngIf="analyticsLoading()"></div>
+    </div>
+
+    <!-- Repost Modal -->
+    <div class="repost-modal" *ngIf="showRepostModal()">
+        <div class="repost-inner">
+            <div class="repost-header">
+                <h4><i class="fas fa-quote-right"></i> Repost with Comment</h4>
+                <button class="btn btn-ghost btn-xs" (click)="showRepostModal.set(false)"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="original-preview">
+                <strong>{{ post.author?.displayName }}</strong>: {{ post.content | slice:0:100 }}{{ post.content.length
+                > 100 ? '...' : '' }}
+            </div>
+            <textarea [(ngModel)]="repostComment" placeholder="Add your thoughts..." class="repost-textarea"
+                rows="3"></textarea>
+            <div class="repost-actions">
+                <button class="btn btn-ghost btn-sm" (click)="showRepostModal.set(false)">Cancel</button>
+                <button class="btn btn-primary btn-sm" (click)="submitRepost()" [disabled]="reposting()">
+                    <i class="fas fa-retweet"></i> {{ reposting() ? 'Reposting...' : 'Repost' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="comments-section" *ngIf="showComments()">
+        <div class="comment-input">
+            <div class="avatar avatar-sm" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                {{ getCurrentUserInitials() }}
+            </div>
+            <input type="text" [(ngModel)]="commentText" placeholder="Write a comment..." class="form-input"
+                (keyup.enter)="submitComment()">
+            <button class="btn btn-primary btn-sm" (click)="submitComment()" [disabled]="!commentText.trim()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <div *ngIf="commentsLoading()" class="spinner-sm" style="margin:12px auto"></div>
+
+        <div class="comments-list">
+            <div class="comment-item" *ngFor="let c of comments()">
+                <div class="avatar avatar-sm"
+                    [style.background]="'linear-gradient(135deg, ' + getColor(c.author?.username || '') + ')'">
+                    {{ getInitials(c.author?.displayName || '') }}
+                </div>
+                <div class="comment-body">
+                    <div class="comment-author">{{ c.author?.displayName || 'User' }}</div>
+                    <div class="comment-text">{{ c.content }}</div>
+                    <div class="comment-meta">
+                        <span class="comment-time">{{ timeAgo(c.createdAt) }}</span>
+                        <button *ngIf="c.userId === authService.getCurrentUserId()"
+                            class="btn btn-ghost btn-xs text-danger" (click)="deleteComment(c.id)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div *ngIf="!commentsLoading() && comments().length === 0" class="no-comments">
+                No comments yet. Be the first!
+            </div>
+        </div>
+    </div>
+</div>

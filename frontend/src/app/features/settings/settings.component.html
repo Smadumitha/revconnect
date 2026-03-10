@@ -1,0 +1,316 @@
+<app-navbar></app-navbar>
+<div class="settings-page">
+    <div class="settings-container">
+
+        <!-- Sidebar Nav -->
+        <aside class="settings-nav card">
+            <div class="nav-title">Settings</div>
+            <button class="snav-item" [class.active]="section() === 'profile'" (click)="section.set('profile')">
+                <i class="fas fa-user"></i> Profile Info
+            </button>
+            <button class="snav-item" [class.active]="section() === 'privacy'" (click)="section.set('privacy')">
+                <i class="fas fa-lock"></i> Privacy
+            </button>
+            <button class="snav-item" [class.active]="section() === 'account'" (click)="section.set('account')">
+                <i class="fas fa-shield-alt"></i> Account
+            </button>
+            <button class="snav-item" *ngIf="isCreatorOrBusiness()" [class.active]="section() === 'business'"
+                (click)="section.set('business')">
+                <i class="fas fa-briefcase"></i> {{ user()?.role === 'BUSINESS' ? 'Business' : 'Creator' }} Details
+            </button>
+            <div class="snav-divider"></div>
+            <button class="snav-item text-danger" (click)="confirmDelete()">
+                <i class="fas fa-trash"></i> Delete Account
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="settings-main">
+
+            <!-- Success/Error Banners -->
+            <div class="alert-success" *ngIf="success()">
+                <i class="fas fa-check-circle"></i> {{ success() }}
+            </div>
+            <div class="alert-error" *ngIf="error()">
+                <i class="fas fa-exclamation-circle"></i> {{ error() }}
+            </div>
+
+            <!-- PROFILE INFO SECTION -->
+            <div class="settings-section card" *ngIf="section() === 'profile'">
+                <div class="section-header">
+                    <h2><i class="fas fa-user"></i> Profile Information</h2>
+                    <p>Update your public profile details</p>
+                </div>
+
+                <div *ngIf="loading()" class="spinner"></div>
+
+                <form *ngIf="!loading()" (ngSubmit)="saveProfile()">
+                    <!-- Avatar area -->
+                    <div class="avatar-section">
+                        <div class="current-avatar" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                            <img *ngIf="user()?.profilePicture" [src]="user()!.profilePicture" class="avatar-img">
+                            <span *ngIf="!user()?.profilePicture">{{ getInitials() }}</span>
+                        </div>
+                        <div class="avatar-actions">
+                            <label class="btn btn-outline btn-sm upload-label">
+                                <i class="fas fa-camera"></i> Change Photo
+                                <input type="file" accept="image/*" (change)="onAvatarChange($event)" hidden>
+                            </label>
+                            <span class="avatar-hint">JPG, PNG up to 5MB</span>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Display Name</label>
+                            <input type="text" class="form-input" [(ngModel)]="form.displayName" name="displayName"
+                                placeholder="Your full name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <div class="input-with-prefix">
+                                <span class="input-prefix">&#64;</span>
+                                <input type="text" class="form-input" [value]="user()?.username" disabled>
+                            </div>
+                            <span class="field-hint">Username cannot be changed</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Bio</label>
+                        <textarea class="form-input" rows="3" [(ngModel)]="form.bio" name="bio"
+                            placeholder="Tell people about yourself..."></textarea>
+                        <span class="field-hint">{{ (form.bio || '').length }}/160 characters</span>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-map-marker-alt"></i> Location</label>
+                            <input type="text" class="form-input" [(ngModel)]="form.location" name="location"
+                                placeholder="City, Country">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-link"></i> Website</label>
+                            <input type="url" class="form-input" [(ngModel)]="form.website" name="website"
+                                placeholder="https://yoursite.com">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" [value]="user()?.email" disabled>
+                        <span class="field-hint">Email cannot be changed here</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-ghost" (click)="resetForm()">Reset</button>
+                        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                            <i class="fas fa-save"></i> {{ saving() ? 'Saving...' : 'Save Changes' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- PRIVACY SECTION -->
+            <div class="settings-section card" *ngIf="section() === 'privacy'">
+                <div class="section-header">
+                    <h2><i class="fas fa-lock"></i> Privacy Settings</h2>
+                    <p>Control who can see your content and profile</p>
+                </div>
+
+                <div class="privacy-options">
+                    <div class="privacy-option">
+                        <div class="privacy-info">
+                            <div class="privacy-icon" [class]="form.isPrivate ? 'icon-private' : 'icon-public'">
+                                <i [class]="form.isPrivate ? 'fas fa-lock' : 'fas fa-globe'"></i>
+                            </div>
+                            <div>
+                                <div class="privacy-label">Account Visibility</div>
+                                <div class="privacy-desc">
+                                    <span *ngIf="!form.isPrivate">
+                                        <strong class="text-success">Public</strong> — Your posts are visible to
+                                        everyone on RevConnect
+                                    </span>
+                                    <span *ngIf="form.isPrivate">
+                                        <strong class="text-warning">Private</strong> — Only your connected followers
+                                        can see your posts
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="toggle-switch" [class.on]="!form.isPrivate" (click)="togglePrivacy()">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+
+                    <div class="privacy-explain-box" [class.public-box]="!form.isPrivate"
+                        [class.private-box]="form.isPrivate">
+                        <div *ngIf="!form.isPrivate">
+                            <i class="fas fa-globe"></i>
+                            <strong>Public Account</strong>
+                            <ul>
+                                <li>Anyone on RevConnect can see your posts and profile</li>
+                                <li>Your posts appear in search results and trending feeds</li>
+                                <li>Anyone can follow you without approval</li>
+                                <li>Best for creators and businesses seeking reach</li>
+                            </ul>
+                        </div>
+                        <div *ngIf="form.isPrivate">
+                            <i class="fas fa-lock"></i>
+                            <strong>Private Account</strong>
+                            <ul>
+                                <li>Only accepted followers/connections can see your posts</li>
+                                <li>Your posts won't appear in public search or trending</li>
+                                <li>Follow requests require your approval</li>
+                                <li>Best for personal accounts that want to control visibility</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" (click)="savePrivacy()" [disabled]="savingPrivacy()">
+                        <i class="fas fa-save"></i> {{ savingPrivacy() ? 'Saving...' : 'Save Privacy Settings' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- ACCOUNT SECTION -->
+            <div class="settings-section card" *ngIf="section() === 'account'">
+                <div class="section-header">
+                    <h2><i class="fas fa-shield-alt"></i> Account Security</h2>
+                    <p>Manage your account credentials and security</p>
+                </div>
+
+                <div class="account-info-box">
+                    <div class="account-stat">
+                        <i class="fas fa-user-circle"></i>
+                        <div>
+                            <div class="astat-label">Account Type</div>
+                            <div class="astat-val">
+                                <span class="role-badge" [class]="'role-' + (user()?.role || 'personal').toLowerCase()">
+                                    {{ user()?.role || 'PERSONAL' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="account-stat">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <div class="astat-label">Member Since</div>
+                            <div class="astat-val">{{ formatJoinDate() }}</div>
+                        </div>
+                    </div>
+                    <div class="account-stat">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <div class="astat-label">Email</div>
+                            <div class="astat-val">{{ user()?.email }}</div>
+                        </div>
+                    </div>
+                    <div class="account-stat">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <div class="astat-label">Status</div>
+                            <div class="astat-val text-success">Active</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="security-notice">
+                    <i class="fas fa-info-circle"></i>
+                    To change your password, use the <a routerLink="/auth/forgot-password">Forgot Password</a> flow on
+                    the login page.
+                </div>
+
+                <div class="section-divider"></div>
+                <h3 class="danger-zone-title"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                <div class="danger-zone">
+                    <div class="danger-action">
+                        <div>
+                            <div class="danger-label">Sign out of all devices</div>
+                            <div class="danger-desc">This will revoke all active sessions</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" (click)="signOutAll()">Sign Out All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CREATOR/BUSINESS SECTION -->
+            <div class="settings-section card" *ngIf="section() === 'business' && isCreatorOrBusiness()">
+                <div class="section-header">
+                    <h2>
+                        <i [class]="user()?.role === 'BUSINESS' ? 'fas fa-briefcase' : 'fas fa-star'"></i>
+                        {{ user()?.role === 'BUSINESS' ? 'Business' : 'Creator' }} Profile
+                    </h2>
+                    <p>Enhance your professional presence</p>
+                </div>
+
+                <form (ngSubmit)="saveProfile()">
+                    <div class="form-group">
+                        <label class="form-label">{{ user()?.role === 'BUSINESS' ? 'Industry' : 'Category / Niche'
+                            }}</label>
+                        <input type="text" class="form-input" [(ngModel)]="form.industry" name="industry"
+                            [placeholder]="user()?.role === 'BUSINESS' ? 'e.g. Technology, Healthcare' : 'e.g. Tech Content, Lifestyle'">
+                    </div>
+
+                    <ng-container *ngIf="user()?.role === 'BUSINESS'">
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-building"></i> Business Address</label>
+                            <input type="text" class="form-input" [(ngModel)]="form.businessAddress"
+                                name="businessAddress" placeholder="123 Main St, City, State">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-clock"></i> Business Hours</label>
+                            <input type="text" class="form-input" [(ngModel)]="form.businessHours" name="businessHours"
+                                placeholder="Mon-Fri 9AM-6PM">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-envelope"></i> Business Contact Email</label>
+                            <input type="email" class="form-input" [(ngModel)]="form.contactEmail" name="contactEmail"
+                                placeholder="contact@yourbusiness.com">
+                        </div>
+                    </ng-container>
+
+                    <ng-container *ngIf="user()?.role === 'CREATOR'">
+                        <div class="creator-tips-box">
+                            <i class="fas fa-lightbulb"></i>
+                            <div>
+                                <strong>Creator Tips</strong>
+                                <p>Fill in your category to help people discover your content. Visit <a
+                                        routerLink="/analytics">Analytics</a> to track your performance.</p>
+                            </div>
+                        </div>
+                    </ng-container>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-ghost" (click)="resetForm()">Reset</button>
+                        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                            <i class="fas fa-save"></i> {{ saving() ? 'Saving...' : 'Save Changes' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div class="modal-overlay" *ngIf="showDeleteModal()">
+        <div class="modal-card card">
+            <div class="modal-icon danger"><i class="fas fa-trash"></i></div>
+            <h3>Delete Account</h3>
+            <p>This action is <strong>permanent and irreversible</strong>. All your posts, connections, and data will be
+                deleted.</p>
+            <div class="modal-input">
+                <label>Type <strong>DELETE</strong> to confirm:</label>
+                <input type="text" class="form-input" [(ngModel)]="deleteConfirmText" placeholder="DELETE">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" (click)="showDeleteModal.set(false)">Cancel</button>
+                <button class="btn btn-danger" (click)="deleteAccount()"
+                    [disabled]="deleteConfirmText !== 'DELETE' || deleting()">
+                    <i class="fas fa-trash"></i> {{ deleting() ? 'Deleting...' : 'Delete Account' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

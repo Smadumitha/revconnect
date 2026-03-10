@@ -1,0 +1,94 @@
+<app-navbar></app-navbar>
+<div class="analytics-page-wrapper">
+    <div class="analytics-page">
+
+        <!-- ACCESS DENIED -->
+        <div class="access-denied card" *ngIf="!hasAccess()">
+            <div class="ad-icon"><i class="fas fa-lock"></i></div>
+            <h2>Analytics Hub</h2>
+            <p>Analytics are available for <strong>Creator</strong> and <strong>Business</strong> accounts only.</p>
+            <a routerLink="/feed" class="btn btn-primary mt-3">Back to Feed</a>
+        </div>
+
+        <!-- ANALYTICS CONTENT -->
+        <div class="analytics-wrap" *ngIf="hasAccess()">
+
+            <!-- Header -->
+            <div class="page-header">
+                <div>
+                    <h1>{{ isBusiness() ? 'Business' : 'Creator' }} Analytics Dashboard</h1>
+                    <p>Track your growth and performance</p>
+                </div>
+                <div class="period-tabs">
+                    <button [class.active]="period() === '7d'" (click)="period.set('7d'); buildChart()">7 Days</button>
+                    <button [class.active]="period() === '30d'" (click)="period.set('30d'); buildChart()">30
+                        Days</button>
+                    <button [class.active]="period() === 'all'" (click)="period.set('all'); buildChart()">90
+                        Days</button>
+                </div>
+            </div>
+
+            <!-- 5 KPI Cards Row -->
+            <div class="kpi-row">
+                <div class="kpi-card card">
+                    <div class="icon-wrap" style="color: var(--primary);"><i class="fas fa-user-friends"></i></div>
+                    <div class="kpi-label">Total Followers</div>
+                    <div class="kpi-val">{{ currentUser()?.followersCount || 0 }}</div>
+                </div>
+                <div class="kpi-card card">
+                    <div class="icon-wrap" style="color: var(--warning);"><i class="fas fa-handshake"></i></div>
+                    <div class="kpi-label">Total Connections</div>
+                    <div class="kpi-val">{{ currentUser()?.followingCount || 0 }}</div>
+                </div>
+                <div class="kpi-card card">
+                    <div class="icon-wrap" style="color: var(--text-muted);"><i class="fas fa-eye"></i></div>
+                    <div class="kpi-label">Profile Views</div>
+                    <div class="kpi-val">{{ metrics()?.totalProfileViews || 0 }}</div>
+                </div>
+                <div class="kpi-card card">
+                    <div class="icon-wrap" style="color: #00d2ff;"><i class="fas fa-chart-bar"></i></div>
+                    <div class="kpi-label">Post Impressions</div>
+                    <div class="kpi-val">{{ metrics()?.totalImpressions || 0 }}</div>
+                </div>
+                <div class="kpi-card card">
+                    <div class="icon-wrap" style="color: var(--error);"><i class="fas fa-heart"></i></div>
+                    <div class="kpi-label">Engagement Rate</div>
+                    <div class="kpi-val">{{ (metrics()?.engagementRate || 0).toFixed(1) }}%</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card card">
+                    <h3>Engagement Growth</h3>
+                    <div class="chart-content">
+                        <div class="placeholder-chart" *ngIf="!loading() && posts().length === 0">No data available
+                        </div>
+                        <svg *ngIf="!loading() && chartData().length > 0" class="line-chart-svg flex-grow"
+                            [attr.viewBox]="'0 0 ' + svgW + ' ' + svgH" preserveAspectRatio="none">
+                            <path [attr.d]="getLinePath('likes')" fill="none" stroke="var(--primary)" stroke-width="3"
+                                stroke-linecap="round" />
+                            <circle *ngFor="let d of chartData(); let i = index" [attr.cx]="getX(i)"
+                                [attr.cy]="getY(d.likes)" r="4" fill="var(--primary)" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-card card">
+                    <h3>Interaction Trends</h3>
+                    <div class="chart-content">
+                        <div class="placeholder-chart" *ngIf="!loading() && posts().length === 0">No data available
+                        </div>
+                        <svg *ngIf="!loading() && chartData().length > 0" class="line-chart-svg flex-grow"
+                            [attr.viewBox]="'0 0 ' + svgW + ' ' + svgH" preserveAspectRatio="none">
+                            <path [attr.d]="getLinePath('comments')" fill="none" stroke="var(--error)" stroke-width="3"
+                                stroke-linecap="round" />
+                            <circle *ngFor="let d of chartData(); let i = index" [attr.cx]="getX(i)"
+                                [attr.cy]="getY(d.comments)" r="4" fill="var(--error)" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

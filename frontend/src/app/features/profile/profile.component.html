@@ -1,0 +1,106 @@
+<app-navbar></app-navbar>
+
+<div *ngIf="loading()" class="spinner-overlay">
+    <div class="spinner"></div>
+</div>
+
+<div class="profile-page" *ngIf="!loading() && user()">
+    <!-- Cover Banner -->
+    <div class="profile-cover">
+        <div class="cover-banner" [class]="'cover-' + (user()?.role || 'personal').toLowerCase()"></div>
+        <div class="profile-header-content">
+            <div class="profile-avatar-wrap">
+                <div class="avatar-xl" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                    <img *ngIf="user()?.profilePicture" [src]="user()!.profilePicture" class="avatar-img" alt="">
+                    <span *ngIf="!user()?.profilePicture">{{ getInitials() }}</span>
+                </div>
+            </div>
+
+            <div class="profile-info">
+                <div class="profile-top-row">
+                    <div class="profile-name-block">
+                        <h1 class="profile-name">{{ user()?.displayName }}</h1>
+                        <div class="profile-username">&#64;{{ user()?.username }}</div>
+                        <span class="role-chip" [class]="'role-' + (user()?.role || 'personal').toLowerCase()">
+                            {{ getRoleLabel(user()?.role || '') }}
+                        </span>
+                        <span class="privacy-badge" [class]="isPrivateAccount() ? 'badge-private' : 'badge-public'">
+                            <i [class]="isPrivateAccount() ? 'fas fa-lock' : 'fas fa-globe'"></i>
+                            {{ isPrivateAccount() ? 'Private' : 'Public' }}
+                        </span>
+                    </div>
+
+                    <div class="profile-actions">
+                        <ng-container *ngIf="!isOwn()">
+
+                            <!-- Unified with Connection -->
+
+                            <!-- CONNECT BUTTON -->
+                            <button class="btn btn-sm"
+                                [class.btn-primary]="!connectionState().isConnected && !connectionState().isPendingSent"
+                                [class.btn-outline]="connectionState().isConnected || connectionState().isPendingSent"
+                                (click)="sendConnection()"
+                                [disabled]="connectionState().isPendingSent || connectionState().isConnected">
+                                <i
+                                    [class]="connectionState().isConnected ? 'fas fa-handshake' : (connectionState().isPendingSent ? 'fas fa-clock' : 'fas fa-link')"></i>
+                                {{ connectionState().isConnected ? 'Connected' : (connectionState().isPendingSent ?
+                                'Requested' : 'Connect') }}
+                            </button>
+
+                        </ng-container>
+
+                        <ng-container *ngIf="isOwn()">
+                            <a routerLink="/settings" class="btn btn-outline btn-sm">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </a>
+                            <a *ngIf="isCreatorOrBusiness()" routerLink="/analytics" class="btn btn-ghost btn-sm">
+                                <i class="fas fa-chart-line"></i> Analytics
+                            </a>
+                        </ng-container>
+                    </div>
+                </div>
+
+                <p class="profile-bio" *ngIf="user()?.bio">{{ user()?.bio }}</p>
+
+                <div class="profile-meta-row">
+                    <span *ngIf="user()?.location" class="meta-item">
+                        <i class="fas fa-map-marker-alt"></i> {{ user()?.location }}
+                    </span>
+                    <span *ngIf="user()?.industry" class="meta-item">
+                        <i class="fas fa-industry"></i> {{ user()?.industry }}
+                    </span>
+                </div>
+
+                <div class="profile-stats-row">
+                    <div class="pstat"><strong>{{ posts().length }}</strong><span>Posts</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Content -->
+    <div class="profile-content">
+        <div class="profile-layout">
+            <aside class="profile-sidebar hide-tablet">
+                <div class="card sidebar-card">
+                    <h4 class="sidebar-title">About</h4>
+                    <p class="bio-text">{{ user()?.bio || 'No bio provided.' }}</p>
+                </div>
+            </aside>
+
+            <div class="posts-section">
+                <div class="section-header">
+                    <h3>Posts <span class="post-count">{{ posts().length }}</span></h3>
+                </div>
+                <div *ngIf="postsLoading()" class="spinner" style="margin:40px auto"></div>
+                <div *ngIf="!postsLoading() && posts().length === 0" class="card empty-posts">
+                    <i class="fas fa-file-alt"></i>
+                    <p>No posts yet</p>
+                </div>
+                <app-post-card *ngFor="let post of posts(); trackBy: trackPost" [post]="post"
+                    (deleted)="onPostDeleted($event)">
+                </app-post-card>
+            </div>
+        </div>
+    </div>
+</div>
