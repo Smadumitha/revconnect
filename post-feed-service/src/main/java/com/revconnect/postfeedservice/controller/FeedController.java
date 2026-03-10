@@ -13,7 +13,10 @@ import java.util.List;
 public class FeedController {
 
     private final FeedService feedService;
-
+    @GetMapping("/test")
+    public String test(){
+        return "feed service working";
+    }
     // Personalized Feed
     @GetMapping("/home")
     public List<PostResponse> homeFeed(@RequestParam Long userId) {

@@ -28,6 +28,10 @@ public class PostController {
     public List<PostResponse> getPostsByUser(@PathVariable Long userId, @RequestParam(required = false) Long currentUserId){
         return postService.getPostsByUser(userId, currentUserId);
     }
+    @GetMapping("/test")
+    public String test(){
+        return "Post service working";
+    }
 
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@RequestBody PostRequest request){

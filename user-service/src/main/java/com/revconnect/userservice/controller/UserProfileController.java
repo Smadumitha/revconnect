@@ -28,6 +28,10 @@ public class UserProfileController {
         this.userProfileService = userProfileService;
         this.userProfileRepository = userProfileRepository;
     }
+    @GetMapping("/test")
+    public String test(){
+        return "User service working";
+    }
     @GetMapping("/suggestions")
     public List<UserProfileResponse> getSuggestions(@RequestParam Long userId){
         return userProfileService.getSuggestedUsers(userId);
