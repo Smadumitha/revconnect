@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { NavbarComponent } from '../../shared/components/navbar/navbar.component';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AnalyticsService, UserAnalytics } from '../../core/services/analytics.service';
 import { Notification, NotificationPreferences } from '../../shared/models/models';
 
 @Component({
@@ -25,6 +26,7 @@ export class NotificationsComponent implements OnInit {
   filter = signal<'all' | 'unread' | 'connections' | 'posts'>('all');
   currentPage = 0;
   hasMore = signal(false);
+  engagement = signal<any>(null);
 
   prefOptions = [
     { key: 'connectionRequests' as keyof NotificationPreferences, label: 'Connection Requests', desc: 'When someone sends you a connection request', icon: 'fas fa-user-plus' },
@@ -34,11 +36,24 @@ export class NotificationsComponent implements OnInit {
     { key: 'newFollowers' as keyof NotificationPreferences, label: 'New Followers', desc: 'When someone follows you', icon: 'fas fa-user-friends' },
   ];
 
-  constructor(private notifService: NotificationService, public authService: AuthService) { }
+  constructor(
+    private notifService: NotificationService,
+    public authService: AuthService,
+    private analyticsService: AnalyticsService
+  ) { }
 
   ngOnInit(): void {
     this.loadNotifications();
     this.loadPrefs();
+    this.loadAnalytics();
+  }
+
+  loadAnalytics(): void {
+    const userId = this.authService.getCurrentUserId();
+    if (!userId) return;
+    this.analyticsService.getUserAnalytics(userId).subscribe((res: UserAnalytics | null) => {
+      if (res) this.engagement.set(res);
+    });
   }
 
   loadNotifications(page = 0): void {

@@ -100,21 +100,38 @@ export class PostCardComponent {
   }
 
   // ── LIKE ─────────────────────────────────────────────────────
+  savingLike = false;
   onLike(): void {
+    if (this.savingLike) return;
     const userId = this.authService.getCurrentUserId();
     if (!userId) return;
-    if (this.post.isLiked) {
-      this.post = { ...this.post, isLiked: false, likesCount: Math.max(0, (this.post.likesCount || 0) - 1) };
+
+    this.savingLike = true;
+    const wasLiked = this.post.isLiked;
+    const initialCount = this.post.likesCount || 0;
+
+    if (wasLiked) {
+      // Optimistic Unlike
+      this.post = { ...this.post, isLiked: false, likesCount: Math.max(0, initialCount - 1) };
       this.postService.unlikePost(userId, this.post.id).subscribe({
-        error: () => { this.post = { ...this.post, isLiked: true, likesCount: (this.post.likesCount || 0) + 1 }; }
+        next: () => { this.savingLike = false; },
+        error: () => {
+          // Revert
+          this.post = { ...this.post, isLiked: true, likesCount: initialCount };
+          this.savingLike = false;
+        }
       });
     } else {
-      this.post = { ...this.post, isLiked: true, likesCount: (this.post.likesCount || 0) + 1 };
+      // Optimistic Like
+      this.post = { ...this.post, isLiked: true, likesCount: initialCount + 1 };
       this.postService.likePost(userId, this.post.id).subscribe({
+        next: () => { this.savingLike = false; },
         error: (err) => {
           if (err.status !== 409) {
-            this.post = { ...this.post, isLiked: false, likesCount: Math.max(0, (this.post.likesCount || 0) - 1) };
+            // Revert
+            this.post = { ...this.post, isLiked: false, likesCount: initialCount };
           }
+          this.savingLike = false;
         }
       });
     }

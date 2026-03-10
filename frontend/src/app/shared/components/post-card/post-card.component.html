@@ -93,7 +93,9 @@
             </span>
         </div>
 
-        <img *ngIf="post.mediaUrl" [src]="post.mediaUrl" class="post-image" alt="">
+        <img *ngIf="post.mediaUrl"
+            [src]="post.mediaUrl.startsWith('http') ? post.mediaUrl : '/api/users/media/' + post.mediaUrl"
+            class="post-image" alt="">
 
         <!-- CTA Banner for Promotional -->
         <div class="cta-banner" *ngIf="post.ctaText" (click)="post.ctaUrl ? openUrl(post.ctaUrl, $event) : null"

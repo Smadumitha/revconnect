@@ -72,8 +72,8 @@
                 </div>
                 <div class="notif-body">
                     <div class="notif-sender" *ngIf="n.sender">
-                        <strong>{{ n.sender.displayName }}</strong>
-                        <span class="notif-username">&#64;{{ n.sender.username }}</span>
+                        <strong>{{ n.sender.displayName || n.sender.username || 'RevConnect User' }}</strong>
+                        <span class="notif-username" *ngIf="n.sender.username">&#64;{{ n.sender.username }}</span>
                     </div>
                     <div class="notif-message">{{ n.message }}</div>
                     <div class="notif-time"><i class="far fa-clock"></i> {{ timeAgo(n.createdAt) }}</div>
@@ -98,20 +98,22 @@
             <h3 class="sidebar-title"><i class="fas fa-chart-bar"></i> Activity</h3>
             <div class="activity-stats">
                 <div class="activity-stat">
-                    <span class="astat-val">{{ notifications().length }}</span>
-                    <span class="astat-label">Total</span>
+                    <span class="astat-val">{{ engagement()?.totalImpressions || notifications().length }}</span>
+                    <span class="astat-label">Impressions</span>
                 </div>
                 <div class="activity-stat">
                     <span class="astat-val text-primary">{{ getUnreadCount() }}</span>
                     <span class="astat-label">Unread</span>
                 </div>
                 <div class="activity-stat">
-                    <span class="astat-val text-danger">{{ getCountByType('POST_LIKED') }}</span>
+                    <span class="astat-val text-danger">{{ engagement()?.totalLikes !== undefined ?
+                        engagement()?.totalLikes : getCountByType('POST_LIKED') }}</span>
                     <span class="astat-label">Likes</span>
                 </div>
                 <div class="activity-stat">
-                    <span class="astat-val text-info">{{ getCountByType('CONNECTION_REQUEST') }}</span>
-                    <span class="astat-label">Requests</span>
+                    <span class="astat-val text-info">{{ engagement()?.totalProfileViews ||
+                        getCountByType('CONNECTION_REQUEST') }}</span>
+                    <span class="astat-label">Views</span>
                 </div>
             </div>
         </div>

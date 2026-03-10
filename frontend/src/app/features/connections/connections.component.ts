@@ -60,16 +60,19 @@ export class ConnectionsComponent implements OnInit {
     });
   }
 
-  removeConnection(id: number): void {
+  removeConnection(targetId: number): void {
     if (!confirm('Are you sure you want to remove this connection?')) return;
-    this.connectionService.removeConnection(id).subscribe({
+    const myId = this.authService.getCurrentUserId();
+    if (!myId) return;
+
+    this.connectionService.unfollow(myId, targetId).subscribe({
       next: () => {
-        this.connections.update(l => l.filter(c => (c.id !== id && (c as any).userId !== id)));
+        this.connections.update(l => l.filter(c => (c.id !== targetId && (c as any).userId !== targetId)));
       },
       error: () => {
-        // Fallback: If deleting by record ID failed, maybe it treats ID as target userId
-        // Try unfollow as a fallback if removeConnection fails? Or just filter locally if we assume it worked but returned 204
-        this.connections.update(l => l.filter(c => (c.id !== id && (c as any).userId !== id)));
+        // Fallback: If it's a mutual connection, we might need to unfollow both ways 
+        // but typically one way is enough to break the connection in this logic.
+        this.connections.update(l => l.filter(c => (c.id !== targetId && (c as any).userId !== targetId)));
       }
     });
   }
@@ -78,14 +81,26 @@ export class ConnectionsComponent implements OnInit {
   getConnectionUser(c: any): any {
     const myId = this.authService.getCurrentUserId();
     if (!c) return null;
-    // If Connection has requester/recipient User objects
+
+    // 1. Check for nested objects (from Connections tab)
     if (c.requester && c.recipient) {
-      if (c.requester.id === myId || c.requester.userId === myId) return c.recipient;
-      return c.requester;
+      const other = (c.requester.userId === myId || c.requester.id === myId) ? c.recipient : c.requester;
+      return other;
     }
-    // If Connection is just a number (ID from getConnections endpoint)
+
+    // 2. Fallback for pending requests
+    if (c.requester) return c.requester;
+    if (c.recipient) return c.recipient;
+
+    // 3. Fallback for raw IDs (from getConnections)
     if (typeof c === 'number' || (c.id && !c.requester)) {
-      return { displayName: 'User #' + (c.id || c), username: null, id: c.id || c };
+      const id = c.id || c;
+      return {
+        displayName: 'RevConnect User',
+        username: null,
+        id: id,
+        userId: id
+      };
     }
     return null;
   }

@@ -34,7 +34,9 @@
                 <div class="form-group">
                     <label class="form-label">Email</label>
                     <input class="form-input" type="email" placeholder="you@example.com" [(ngModel)]="form.email"
-                        name="email" required>
+                        name="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]+">
+                    <div class="test-error" *ngIf="form.email && !form.email.includes('@')">Email must contain &#64;
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password</label>
