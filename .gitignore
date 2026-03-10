@@ -1,8 +1,8 @@
 # --- Frontend / Angular Files ---
-node_modules/
-dist/
-.angular/
-coverage/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
 # Compiled class file
 *.class
 
