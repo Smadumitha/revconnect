@@ -37,7 +37,10 @@
                     <a [routerLink]="getConnectionUser(c)?.username ? ['/profile', getConnectionUser(c)?.username] : null"
                         class="user-card-link">
                         <div class="avatar-circle" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
-                            {{ getInitials(getConnectionUser(c)?.displayName || '?') }}
+                            <img *ngIf="getConnectionUser(c)?.profilePicture" [src]="getAvatarUrl(getConnectionUser(c))"
+                                class="avatar-img">
+                            <span *ngIf="!getConnectionUser(c)?.profilePicture">{{
+                                getInitials(getConnectionUser(c)?.displayName || '?') }}</span>
                         </div>
                         <div class="user-name">{{ getConnectionUser(c)?.displayName || 'User' }}</div>
                         <div class="user-username" *ngIf="getConnectionUser(c)?.username">&#64;{{
@@ -65,7 +68,10 @@
                 <div class="request-card card" *ngFor="let c of pendingReceived()">
                     <a *ngIf="c.requester" [routerLink]="['/profile', c.requester.username]" class="request-user">
                         <div class="avatar-sm-circle" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
-                            {{ getInitials(c.requester.displayName || '?') }}
+                            <img *ngIf="c.requester?.profilePicture" [src]="getAvatarUrl(c.requester)"
+                                class="avatar-img">
+                            <span *ngIf="!c.requester?.profilePicture">{{ getInitials(c.requester.displayName || '?')
+                                }}</span>
                         </div>
                         <div class="request-info">
                             <div class="font-semibold">{{ c.requester.displayName }}</div>
@@ -102,7 +108,10 @@
                         [routerLink]="c.recipient.username ? ['/profile', c.recipient.username] : null"
                         class="request-user">
                         <div class="avatar-sm-circle" [style.background]="'linear-gradient(135deg, #ff6584, #6c63ff)'">
-                            {{ getInitials(safeDisplayName(c.recipient)) }}
+                            <img *ngIf="c.recipient?.profilePicture" [src]="getAvatarUrl(c.recipient)"
+                                class="avatar-img">
+                            <span *ngIf="!c.recipient?.profilePicture">{{ getInitials(safeDisplayName(c.recipient))
+                                }}</span>
                         </div>
                         <div class="request-info">
                             <div class="font-semibold">{{ safeDisplayName(c.recipient) }}</div>

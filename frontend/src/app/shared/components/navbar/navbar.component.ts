@@ -68,4 +68,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notifService.stopPolling();
     this.authService.logout();
   }
+
+  getAvatarUrl(): string | null {
+    const url = this.authService.currentUser()?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
+  }
 }

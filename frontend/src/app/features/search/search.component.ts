@@ -45,7 +45,7 @@ export class SearchComponent implements OnInit {
   loadDefaultPosts(): void {
     this.postsLoading.set(true);
     this.postService.getTrending().subscribe(r => {
-      this.posts.set(r);
+      this.posts.set(r.content || []);
       this.postsLoading.set(false);
     });
     const userId = this.authService.getCurrentUserId();
@@ -86,12 +86,12 @@ export class SearchComponent implements OnInit {
       if (this.query.startsWith('#')) {
         const tag = this.query.slice(1);
         this.postService.getPostsByHashtag(tag).subscribe(posts => {
-          this.posts.set(posts);
+          this.posts.set(posts.content || []);
           this.postsLoading.set(false);
         });
       } else {
         this.postService.getTrending().subscribe(r => {
-          this.posts.set(r);
+          this.posts.set(r.content || []);
           this.postsLoading.set(false);
         });
       }
@@ -133,10 +133,19 @@ export class SearchComponent implements OnInit {
     return (name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
+  getAvatarUrl(user: any): string | null {
+    const url = user?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
+  }
+
   getColor(seed: string): string {
-    const colors = ['#6c63ff, #8b85ff', '#ff6584, #ff8fa3', '#4ecb71, #43b8b8', '#f5a623, #f78c2c'];
+    if (!seed) return '#6c63ff, #ff6584';
+    const colors = ['#6c63ff, #8b85ff', '#ff6584, #ff8fa3', '#4ecb71, #43b8b8', '#f5a623, #f78c2c', '#8b5cf6, #6366f1'];
     let hash = 0;
-    for (let c of seed) hash = c.charCodeAt(0) + ((hash << 5) - hash);
+    for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
     return colors[Math.abs(hash) % colors.length];
   }
 

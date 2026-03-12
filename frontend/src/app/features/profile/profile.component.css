@@ -49,21 +49,28 @@
 .profile-header-content {
     padding: 0 32px;
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
+    /* Changed from flex-end to flex-start for better alignment */
     gap: 24px;
-    margin-top: -50px;
+    margin-top: -40px;
+    /* Reduced negative margin */
+    position: relative;
+    z-index: 2;
 }
 
 .avatar-xl {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    border-radius: 24px;
+    /* Changed to squire-ish for modern look */
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 36px;
-    border: 4px solid #0f0e1a;
+    font-size: 42px;
+    border: 6px solid #0f0e1a;
     overflow: hidden;
+    background: #1a1929;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .avatar-img {
@@ -146,10 +153,12 @@
 
 .profile-stats-row {
     display: flex;
-    gap: 32px;
-    margin-top: 16px;
-    padding-top: 16px;
+    gap: 40px;
+    margin-top: 20px;
+    padding: 16px 0;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    /* Added bottom border */
 }
 
 .pstat {

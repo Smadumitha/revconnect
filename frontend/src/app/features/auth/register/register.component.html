@@ -34,8 +34,10 @@
                 <div class="form-group">
                     <label class="form-label">Email</label>
                     <input class="form-input" type="email" placeholder="you@example.com" [(ngModel)]="form.email"
-                        name="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]+">
-                    <div class="test-error" *ngIf="form.email && !form.email.includes('@')">Email must contain &#64;
+                        name="email" required>
+                    <div class="error-text" *ngIf="form.email && !isEmailValid()"
+                        style="color: #ff6584; font-size: 12px; margin-top: 4px;">
+                        <i class="fas fa-exclamation-circle"></i> Email must contain &#64;
                     </div>
                 </div>
                 <div class="form-group">

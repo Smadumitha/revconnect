@@ -43,9 +43,17 @@ export class RegisterComponent {
     this.form.role = value as 'PERSONAL' | 'CREATOR' | 'BUSINESS';
   }
 
+  isEmailValid(): boolean {
+    return !!this.form.email && this.form.email.includes('@');
+  }
+
   constructor(private authService: AuthService, private router: Router) { }
 
   onRegister(): void {
+    if (!this.form.email.includes('@')) {
+      this.error.set('Email must contain @');
+      return;
+    }
     this.loading.set(true);
     this.error.set('');
     this.authService.register(this.form).subscribe({

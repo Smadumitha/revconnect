@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Analytics, ApiResponse, Comment, EngagementStats, Post } from '../../shared/models/models';
+import { Analytics, ApiResponse, Comment, EngagementStats, PageResponse, Post } from '../../shared/models/models';
 
 @Injectable({ providedIn: 'root' })
 export class PostService {
@@ -39,24 +39,26 @@ export class PostService {
   }
 
   // GET /posts/user/{userId}
-  getUserPosts(userId: number): Observable<Post[]> {
-    return this.http.get<Post[]>(`/posts/user/${userId}`).pipe(
-      catchError(() => of([]))
+  getUserPosts(userId: number, page: number = 0, size: number = 10): Observable<PageResponse<Post>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PageResponse<Post>>(`/posts/user/${userId}`, { params }).pipe(
+      catchError(() => of({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 0, last: true, first: true }))
     );
   }
 
   // GET /feed/home?userId=
-  getHomeFeed(userId: number): Observable<Post[]> {
-    const params = new HttpParams().set('userId', userId);
-    return this.http.get<Post[]>('/feed/home', { params }).pipe(
-      catchError(() => of([]))
+  getHomeFeed(userId: number, page: number = 0, size: number = 10): Observable<PageResponse<Post>> {
+    const params = new HttpParams().set('userId', userId).set('page', page).set('size', size);
+    return this.http.get<PageResponse<Post>>('/feed/home', { params }).pipe(
+      catchError(() => of({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 0, last: true, first: true }))
     );
   }
 
   // GET /feed/trending
-  getTrending(): Observable<Post[]> {
-    return this.http.get<Post[]>('/feed/trending').pipe(
-      catchError(() => of([]))
+  getTrending(page: number = 0, size: number = 10): Observable<PageResponse<Post>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PageResponse<Post>>('/feed/trending', { params }).pipe(
+      catchError(() => of({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 0, last: true, first: true }))
     );
   }
 
@@ -68,10 +70,10 @@ export class PostService {
   }
 
   // GET /feed/hashtag?tag=
-  getPostsByHashtag(tag: string): Observable<Post[]> {
-    const params = new HttpParams().set('tag', tag);
-    return this.http.get<Post[]>('/feed/hashtag', { params }).pipe(
-      catchError(() => of([]))
+  getPostsByHashtag(tag: string, page: number = 0, size: number = 10): Observable<PageResponse<Post>> {
+    const params = new HttpParams().set('tag', tag).set('page', page).set('size', size);
+    return this.http.get<PageResponse<Post>>('/feed/hashtag', { params }).pipe(
+      catchError(() => of({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 0, last: true, first: true }))
     );
   }
 
@@ -91,6 +93,13 @@ export class PostService {
   unlikePost(userId: number, postId: number): Observable<ApiResponse<string>> {
     const params = new HttpParams().set('userId', userId).set('postId', postId);
     return this.http.delete<ApiResponse<string>>('/api/interactions/unlike', { params });
+  }
+
+  // GET /api/interactions/post/{postId}/likers
+  getLikerNames(postId: number): Observable<string[]> {
+    return this.http.get<string[]>(`/api/interactions/post/${postId}/likers`).pipe(
+      catchError(() => of([]))
+    );
   }
 
   // POST /api/shares  { userId, postId }

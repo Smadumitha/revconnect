@@ -48,7 +48,7 @@
                     <!-- Avatar area -->
                     <div class="avatar-section">
                         <div class="current-avatar" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
-                            <img *ngIf="user()?.profilePicture" [src]="user()!.profilePicture" class="avatar-img">
+                            <img *ngIf="user()?.profilePicture" [src]="getAvatarUrl()" class="avatar-img">
                             <span *ngIf="!user()?.profilePicture">{{ getInitials() }}</span>
                         </div>
                         <div class="avatar-actions">

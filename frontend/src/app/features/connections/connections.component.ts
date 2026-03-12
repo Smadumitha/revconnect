@@ -1,5 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin, of } from 'rxjs';
+import { switchMap, catchError } from 'rxjs/operators';
 import { RouterLink } from '@angular/router';
 import { NavbarComponent } from '../../shared/components/navbar/navbar.component';
 import { ConnectionService } from '../../core/services/connection.service';
@@ -35,21 +37,33 @@ export class ConnectionsComponent implements OnInit {
     this.connectionService.getPendingSent(userId).subscribe(r => this.pendingSent.set(r));
 
     // Backend returns List<Long> (user IDs) for accepted connections
-    this.connectionService.getConnections(userId).subscribe(ids => {
-      const mapped = (ids as any[]).map(id => ({ id, status: 'ACCEPTED' } as any));
+    this.connectionService.getConnections(userId).pipe(
+      switchMap(ids => {
+        if (!ids || ids.length === 0) return of([]);
+        const userCalls = (ids as number[]).map(id => this.userService.getUserById(id).pipe(
+          catchError(() => of({ id, userId: id, displayName: `RevConnect User`, username: null } as any))
+        ));
+        return forkJoin(userCalls);
+      })
+    ).subscribe(users => {
+      const mapped = users.map(u => ({ id: u.id || u.userId, requester: u, status: 'ACCEPTED' } as any));
       this.connections.set(mapped);
     });
 
     // Followers and Following unified into Connections
   }
 
-
   accept(id: number): void {
     this.connectionService.acceptRequest(id).subscribe(() => {
       const conn = this.pendingReceived().find(c => c.id === id);
       if (conn) {
         this.pendingReceived.update(l => l.filter(c => c.id !== id));
-        this.connections.update(l => [...l, { ...conn, status: 'ACCEPTED' }]);
+        const targetUser = conn.requester;
+        this.connections.update(l => [...l, {
+          id: targetUser?.userId || targetUser?.id,
+          requester: targetUser,
+          status: 'ACCEPTED'
+        } as any]);
       }
     });
   }
@@ -115,5 +129,13 @@ export class ConnectionsComponent implements OnInit {
 
   getInitials(name: string): string {
     return (name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  }
+
+  getAvatarUrl(user: any): string | null {
+    const url = user?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
   }
 }

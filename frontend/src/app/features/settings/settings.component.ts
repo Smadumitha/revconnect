@@ -188,4 +188,12 @@ export class SettingsComponent implements OnInit {
     if (!d) return 'N/A';
     return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
   }
+
+  getAvatarUrl(): string | null {
+    const url = this.user()?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
+  }
 }

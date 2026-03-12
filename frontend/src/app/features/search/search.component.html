@@ -1,69 +1,116 @@
 <app-navbar></app-navbar>
+
 <div class="search-page">
-    <div class="search-header card">
-        <div class="search-bar">
-            <i class="fas fa-search"></i>
-            <input type="text" [(ngModel)]="query" placeholder="Search people, posts, hashtags..." (input)="onSearch()"
-                class="search-input" [value]="query">
-        </div>
-        <div class="filter-tabs">
-            <button class="ftab" [class.active]="filter() === 'people'" (click)="filter.set('people'); onSearch()">
-                <i class="fas fa-users"></i> People
-            </button>
-            <button class="ftab" [class.active]="filter() === 'posts'" (click)="filter.set('posts'); onSearch()">
-                <i class="fas fa-file-alt"></i> Posts
-            </button>
-        </div>
+
+  <!-- SEARCH HEADER -->
+  <div class="search-header card">
+    <div class="search-bar">
+      <i class="fas fa-search"></i>
+      <input
+        type="text"
+        [(ngModel)]="query"
+        placeholder="Search people, posts, hashtags..."
+        (input)="onSearch()"
+        class="search-input"
+      />
     </div>
 
-    <!-- People results -->
-    <div *ngIf="filter() === 'people'">
-        <div *ngIf="searchLoading()" class="spinner"></div>
-        <div *ngIf="!searchLoading() && users().length === 0 && query" class="empty-state card">
-            <i class="fas fa-search empty-icon"></i>
-            <p>No people found for "{{ query }}"</p>
-        </div>
-        <div *ngIf="!query" class="card discover-header">
-            <h3><i class="fas fa-compass"></i> Discover People</h3>
-            <p>Search for people, creators and businesses to connect with</p>
-        </div>
-        <div class="people-grid">
-            <div class="person-card card" *ngFor="let u of users()">
-                <a [routerLink]="['/profile', u.username]" class="person-link">
-                    <div class="person-avatar"
-                        [style.background]="'linear-gradient(135deg, ' + getColor(u.username) + ')'">
-                        {{ getInitials(u.displayName) }}
-                    </div>
-                    <div class="person-name">{{ u.displayName }}</div>
-                    <div class="person-username">&#64;{{ u.username }}</div>
-                    <div class="person-role role-{{ (u.role || 'personal').toLowerCase() }}">{{ u.role || 'Personal' }}
-                    </div>
-                    <div class="person-bio" *ngIf="u.bio">{{ u.bio | slice:0:80 }}{{ u.bio.length > 80 ? '...' : '' }}
-                    </div>
-                    <div class="person-stats">
-                        <span>{{ u.followersCount }} followers</span>
-                    </div>
-                </a>
-                <div class="person-actions">
-                    <button class="btn btn-outline btn-sm" (click)="toggleFollow(u)">
-                        <i [class]="u.isFollowing ? 'fas fa-user-minus' : 'fas fa-user-plus'"></i>
-                        {{ u.isFollowing ? 'Unfollow' : 'Follow' }}
-                    </button>
-                    <button class="btn btn-ghost btn-sm" (click)="connect(u)" [disabled]="u.isPendingSent">
-                        <i [class]="u.isPendingSent ? 'fas fa-clock' : 'fas fa-link'"></i>
-                        <span *ngIf="u.isPendingSent" style="margin-left: 5px; font-size: 11px;">Requested</span>
-                    </button>
-                </div>
-            </div>
-        </div>
+    <div class="filter-tabs">
+      <button class="ftab" [class.active]="filter() === 'people'" (click)="filter.set('people'); onSearch()">
+        <i class="fas fa-users"></i> People
+      </button>
+
+      <button class="ftab" [class.active]="filter() === 'posts'" (click)="filter.set('posts'); onSearch()">
+        <i class="fas fa-file-alt"></i> Posts
+      </button>
+    </div>
+  </div>
+
+  <!-- PEOPLE -->
+  <div *ngIf="filter() === 'people'">
+
+    <div *ngIf="searchLoading()" class="spinner"></div>
+
+    <div *ngIf="!searchLoading() && users().length === 0 && query" class="empty-state card">
+      <i class="fas fa-search empty-icon"></i>
+      <p>No people found for "{{ query }}"</p>
     </div>
 
-    <!-- Posts results -->
-    <div *ngIf="filter() === 'posts'">
-        <div *ngIf="!query" class="card discover-header">
-            <h3><i class="fas fa-fire"></i> Trending Posts</h3>
-        </div>
-        <div *ngIf="postsLoading()" class="spinner"></div>
-        <app-post-card *ngFor="let p of posts(); trackBy: trackPost" [post]="p"></app-post-card>
+    <div *ngIf="!query" class="card discover-header">
+      <h3><i class="fas fa-compass"></i> Discover People</h3>
+      <p>Search for people, creators and businesses to connect with</p>
     </div>
+
+    <div class="people-grid">
+
+      <div class="person-card card" *ngFor="let u of users()">
+
+        <a [routerLink]="['/profile', u.username]" class="person-link">
+
+          <div
+            class="person-avatar"
+            [style.background]="'linear-gradient(135deg,' + getColor(u.username) + ')'"
+          >
+            <img *ngIf="u.profilePicture" [src]="getAvatarUrl(u)" class="avatar-img" />
+            <span *ngIf="!u.profilePicture">
+              {{ getInitials(u.displayName) }}
+            </span>
+          </div>
+
+          <div class="person-name">{{ u.displayName }}</div>
+
+          <div class="person-username">
+            &#64;{{ u.username }}
+          </div>
+
+          <div class="person-role role-{{ (u.role || 'personal').toLowerCase() }}">
+            {{ u.role || 'Personal' }}
+          </div>
+
+          <div class="person-bio" *ngIf="u.bio">
+            {{ u.bio | slice:0:80 }}{{ u.bio.length > 80 ? '...' : '' }}
+          </div>
+
+          <div class="person-stats">
+            {{ u.followersCount }} followers
+          </div>
+
+        </a>
+
+        <!-- ACTION BUTTONS -->
+        <div class="person-actions">
+
+          <button class="btn btn-outline btn-sm" (click)="toggleFollow(u)">
+            <i [class]="u.isFollowing ? 'fas fa-user-minus' : 'fas fa-user-plus'"></i>
+            {{ u.isFollowing ? 'Unfollow' : 'Follow' }}
+          </button>
+
+          <button class="btn btn-ghost btn-sm" (click)="connect(u)" [disabled]="u.isPendingSent">
+            <i [class]="u.isPendingSent ? 'fas fa-clock' : 'fas fa-link'"></i>
+            <span *ngIf="u.isPendingSent">Requested</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- POSTS -->
+  <div *ngIf="filter() === 'posts'">
+
+    <div *ngIf="!query" class="card discover-header">
+      <h3><i class="fas fa-fire"></i> Trending Posts</h3>
+    </div>
+
+    <div *ngIf="postsLoading()" class="spinner"></div>
+
+    <app-post-card
+      *ngFor="let p of posts(); trackBy: trackPost"
+      [post]="p">
+    </app-post-card>
+
+  </div>
+
 </div>

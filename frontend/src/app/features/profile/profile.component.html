@@ -11,7 +11,7 @@
         <div class="profile-header-content">
             <div class="profile-avatar-wrap">
                 <div class="avatar-xl" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
-                    <img *ngIf="user()?.profilePicture" [src]="user()!.profilePicture" class="avatar-img" alt="">
+                    <img *ngIf="user()?.profilePicture" [src]="getProfilePictureUrl()" class="avatar-img" alt="">
                     <span *ngIf="!user()?.profilePicture">{{ getInitials() }}</span>
                 </div>
             </div>

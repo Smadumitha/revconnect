@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/components/navbar/navbar.component';
@@ -83,7 +84,10 @@ export class FeedComponent implements OnInit {
         break;
       case 'scheduled':
         obs = this.postService.getUserPosts(userId!).pipe(
-          map(posts => posts.filter(p => p.status === 'SCHEDULED'))
+          map(response => ({
+            content: response.content.filter(p => p.status === 'SCHEDULED'),
+            last: true
+          }))
         );
         break;
       case 'trending':
@@ -93,15 +97,21 @@ export class FeedComponent implements OnInit {
         obs = this.postService.getHomeFeed(userId!);
     }
 
-    obs.subscribe({
-      next: posts => {
+    (obs as Observable<any>).subscribe({
+      next: (response: any) => {
+        const newPosts = response.content || response; // Handle both wrapped and unwrapped
         if (this.currentPage === 0) {
-          this.posts.set(posts);
+          this.posts.set(newPosts);
         } else {
-          this.posts.update(p => [...p, ...posts]);
+          this.posts.update(p => [...p, ...newPosts]);
         }
-        // Backend doesn't support pagination properly yet, so hasMore is false
-        this.hasMore.set(false);
+
+        // Handle pagination state if response is a PageResponse
+        if (response.last !== undefined) {
+          this.hasMore.set(!response.last);
+        } else {
+          this.hasMore.set(false);
+        }
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
@@ -218,6 +228,13 @@ export class FeedComponent implements OnInit {
 
   getInitials2(name: string): string {
     return (name || '').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  }
+  getAvatarUrl(): string | null {
+    const url = this.authService.currentUser()?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
   }
 
   isCreatorOrBusiness(): boolean {

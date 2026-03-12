@@ -1,34 +1,89 @@
 <app-navbar></app-navbar>
 <div class="feed-layout">
     <!-- Left Sidebar -->
-    <aside class="sidebar-left hide-tablet">
+   <aside class="sidebar-left hide-tablet">
+
+        <!-- PROFILE CARD -->
         <div class="profile-card card">
+
             <div class="profile-banner"></div>
+
             <div class="profile-info">
-                <div class="avatar avatar-lg" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
-                    {{ getInitials() }}
+
+                <!-- Avatar -->
+                <div class="avatar avatar-lg"
+                    [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+
+                    <img *ngIf="authService.currentUser()?.profilePicture"
+                        [src]="getAvatarUrl()"
+                        class="avatar-img">
+
+                    <span *ngIf="!authService.currentUser()?.profilePicture">
+                        {{ getInitials() }}
+                    </span>
+
                 </div>
-                <a [routerLink]="['/profile', authService.currentUser()?.username]" class="profile-name">
+
+                <!-- Name -->
+                <a [routerLink]="['/profile', authService.currentUser()?.username]"
+                    class="profile-name">
+
                     {{ authService.currentUser()?.displayName }}
+
                 </a>
-                <div class="profile-username">&#64;{{ authService.currentUser()?.username }}</div>
-                <div class="role-badge" [class]="'role-' + (authService.currentUser()?.role || '').toLowerCase()">
-                    {{ authService.currentUser()?.role }}
+
+                <!-- Username -->
+                <div class="profile-username">
+                    &#64;{{ authService.currentUser()?.username }}
                 </div>
+
+                <!-- Role -->
+                <div class="role-badge"
+                    [class]="'role-' + (authService.currentUser()?.role || '').toLowerCase()">
+
+                    {{ authService.currentUser()?.role }}
+
+                </div>
+
             </div>
+
         </div>
 
+        <!-- QUICK LINKS -->
         <div class="card quick-links">
+
             <div class="quick-link-title">Quick Links</div>
-            <a class="quick-link" routerLink="/feed"><i class="fas fa-home"></i> Home Feed</a>
-            <a class="quick-link" routerLink="/connections"><i class="fas fa-users"></i> Network</a>
-            <a class="quick-link" routerLink="/notifications"><i class="fas fa-bell"></i> Notifications</a>
-            <a class="quick-link" routerLink="/search"><i class="fas fa-compass"></i> Discover</a>
-            <a class="quick-link analytics-link" routerLink="/analytics" *ngIf="isCreatorOrBusiness()">
-                <i class="fas fa-chart-line"></i> Analytics Hub
+
+            <a class="quick-link" routerLink="/feed">
+                <i class="fas fa-home"></i> Home Feed
             </a>
-            <a class="quick-link" routerLink="/settings"><i class="fas fa-cog"></i> Settings</a>
+
+            <a class="quick-link" routerLink="/connections">
+                <i class="fas fa-users"></i> Network
+            </a>
+
+            <a class="quick-link" routerLink="/notifications">
+                <i class="fas fa-bell"></i> Notifications
+            </a>
+
+            <a class="quick-link" routerLink="/search">
+                <i class="fas fa-compass"></i> Discover
+            </a>
+
+            <a class="quick-link analytics-link"
+                routerLink="/analytics"
+                *ngIf="isCreatorOrBusiness()">
+
+                <i class="fas fa-chart-line"></i> Analytics Hub
+
+            </a>
+
+            <a class="quick-link" routerLink="/settings">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+
         </div>
+
     </aside>
 
     <!-- Main Feed -->

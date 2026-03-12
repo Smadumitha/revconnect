@@ -85,7 +85,7 @@ export class ProfileComponent implements OnInit {
 
   loadPosts(userId: number): void {
     this.postService.getUserPosts(userId).subscribe(res => {
-      this.posts.set(Array.isArray(res) ? res : []);
+      this.posts.set(res.content || []);
       this.postsLoading.set(false);
     });
   }
@@ -134,4 +134,13 @@ export class ProfileComponent implements OnInit {
   }
 
   trackPost(_: number, post: Post): number { return post.id; }
+
+  getProfilePictureUrl(): string | null {
+    const url = this.user()?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    // If it's a relative path like /uploads/..., extract the filename and point to the API
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
+  }
 }

@@ -47,9 +47,7 @@
             <a [routerLink]="['/profile', authService.currentUser()?.username]" class="nav-user-link"
                 title="My Profile">
                 <div class="avatar-nav" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
-                    <img *ngIf="authService.currentUser()?.profilePicture"
-                        [src]="authService.currentUser()!.profilePicture!"
-                        (error)="authService.currentUser()!.profilePicture = undefined" class="avatar-img">
+                    <img *ngIf="authService.currentUser()?.profilePicture" [src]="getAvatarUrl()" class="avatar-img">
                     <span *ngIf="!authService.currentUser()?.profilePicture">{{ getInitials() }}</span>
                 </div>
                 <span class="nav-label hide-tablet">Me</span>
@@ -61,8 +59,8 @@
             <div class="user-dropdown" *ngIf="menuOpen()" (click)="$event.stopPropagation()">
                 <div class="dropdown-header">
                     <div class="dh-avatar" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
-                        <img *ngIf="authService.currentUser()?.profilePicture"
-                            [src]="authService.currentUser()!.profilePicture!" class="avatar-img">
+                        <img *ngIf="authService.currentUser()?.profilePicture" [src]="getAvatarUrl()"
+                            class="avatar-img">
                         <span *ngIf="!authService.currentUser()?.profilePicture">{{ getInitials() }}</span>
                     </div>
                     <div class="dh-info">

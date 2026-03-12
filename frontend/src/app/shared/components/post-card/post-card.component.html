@@ -21,7 +21,7 @@
         <a [routerLink]="['/profile', post.author?.username]" class="author-link">
             <div class="avatar"
                 [style.background]="'linear-gradient(135deg, ' + getColor(post.author?.username || '') + ')'">
-                <img *ngIf="post.author?.profilePicture" [src]="post.author?.profilePicture" class="avatar-img">
+                <img *ngIf="post.author?.profilePicture" [src]="getAuthorAvatarUrl()" class="avatar-img">
                 <span *ngIf="!post.author?.profilePicture">{{ getInitials(post.author?.displayName || '') }}</span>
             </div>
             <div class="author-info">
@@ -93,9 +93,7 @@
             </span>
         </div>
 
-        <img *ngIf="post.mediaUrl"
-            [src]="post.mediaUrl.startsWith('http') ? post.mediaUrl : '/api/users/media/' + post.mediaUrl"
-            class="post-image" alt="">
+        <img *ngIf="post.mediaUrl" [src]="getPostImageUrl()" class="post-image" alt="">
 
         <!-- CTA Banner for Promotional -->
         <div class="cta-banner" *ngIf="post.ctaText" (click)="post.ctaUrl ? openUrl(post.ctaUrl, $event) : null"
@@ -113,22 +111,31 @@
         <div class="original-post" *ngIf="post.originalPost">
             <div class="original-header">
                 <i class="fas fa-retweet"></i> Original post by
-                <strong>{{ post.originalPost.author?.displayName }}</strong>
+                <strong>{{ post.originalPost.author?.displayName || 'User' }}</strong>
             </div>
             <p class="original-content">{{ post.originalPost.content }}</p>
+        </div>
+
+        <!-- Liked by section -->
+        <div class="liked-by-section" *ngIf="likerNames().length > 0">
+            <i class="fas fa-heart text-danger"></i>
+            <span class="liked-by-text">
+                Liked by <strong>{{ likerNames()[0] }}</strong>
+                <span *ngIf="likerNames().length > 1"> and {{ likerNames().length - 1 }} others</span>
+            </span>
         </div>
     </div>
 
     <!-- Footer Actions -->
     <div class="post-footer">
-        <button class="action-btn" [class.liked]="post.isLiked" (click)="onLike()">
-            <i [class]="post.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i>
-            <span>{{ post.likesCount || 0 }}</span>
+        <button class="action-btn" [class.liked]="isLiked()" (click)="onLike()">
+            <i [class]="isLiked() ? 'fas fa-heart' : 'far fa-heart'"></i>
+            <span>{{ likesCount() }}</span>
         </button>
 
         <button class="action-btn" (click)="toggleComments()">
             <i class="far fa-comment"></i>
-            <span>{{ post.commentsCount || 0 }}</span>
+            <span>{{ commentsCount() }}</span>
         </button>
 
         <button class="action-btn" [class.shared]="post.isShared" (click)="onShare()">
@@ -227,7 +234,8 @@
             <div class="comment-item" *ngFor="let c of comments()">
                 <div class="avatar avatar-sm"
                     [style.background]="'linear-gradient(135deg, ' + getColor(c.author?.username || '') + ')'">
-                    {{ getInitials(c.author?.displayName || '') }}
+                    <img *ngIf="c.author?.profilePicture" [src]="getCommentAvatarUrl(c)" class="avatar-img">
+                    <span *ngIf="!c.author?.profilePicture">{{ getInitials(c.author?.displayName || '') }}</span>
                 </div>
                 <div class="comment-body">
                     <div class="comment-author">{{ c.author?.displayName || 'User' }}</div>

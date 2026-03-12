@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './post-card.component.html',
   styleUrls: ['./post-card.component.css']
 })
-export class PostCardComponent {
+export class PostCardComponent implements OnInit {
   @Input() post!: Post;
   @Output() deleted = new EventEmitter<number>();
   @Output() hashtagClicked = new EventEmitter<string>();
@@ -32,15 +32,44 @@ export class PostCardComponent {
   showRepostModal = signal(false);
   repostComment = '';
   reposting = signal(false);
+  likerNames = signal<string[]>([]);
+  isLiked = signal(false);
+  likesCount = signal(0);
+  commentsCount = signal(0);
 
   engagementHistory = [20, 45, 30, 60, 50, 75, 40, 80, 55, 65, 35, 70];
 
   constructor(
     private postService: PostService,
     public authService: AuthService,
-    private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private router: Router
   ) { }
+
+  ngOnInit(): void {
+    this.isLiked.set(this.post.isLiked);
+    this.likesCount.set(this.post.likesCount || 0);
+    this.commentsCount.set(this.post.commentsCount || 0);
+    this.loadLikers();
+  }
+
+ loadLikers(): void {
+  if (this.likesCount() > 0) {
+    this.postService.getLikerNames(this.post.id).subscribe((res: any[]) => {
+
+      const names = res.map(u => {
+        if (typeof u === 'string') return u;           // already username
+        if (u.username) return u.username;
+        if (u.displayName) return u.displayName;
+        return 'User';
+      });
+
+      this.likerNames.set(names);
+    });
+  } else {
+    this.likerNames.set([]);
+  }
+}
 
   isOwner(): boolean {
     return this.post.userId === this.authService.getCurrentUserId();
@@ -107,29 +136,51 @@ export class PostCardComponent {
     if (!userId) return;
 
     this.savingLike = true;
-    const wasLiked = this.post.isLiked;
-    const initialCount = this.post.likesCount || 0;
+    const wasLiked = this.isLiked();
+    const initialCount = this.likesCount();
 
     if (wasLiked) {
       // Optimistic Unlike
-      this.post = { ...this.post, isLiked: false, likesCount: Math.max(0, initialCount - 1) };
+      this.isLiked.set(false);
+      this.likesCount.update(c => Math.max(0, c - 1));
+      this.post.isLiked = false;
+      this.post.likesCount = this.likesCount();
+
       this.postService.unlikePost(userId, this.post.id).subscribe({
-        next: () => { this.savingLike = false; },
+        next: () => {
+          this.savingLike = false;
+          this.loadLikers();
+        },
         error: () => {
           // Revert
-          this.post = { ...this.post, isLiked: true, likesCount: initialCount };
+          this.isLiked.set(true);
+          this.likesCount.set(initialCount);
+          this.post.isLiked = true;
+          this.post.likesCount = initialCount;
           this.savingLike = false;
         }
       });
     } else {
       // Optimistic Like
-      this.post = { ...this.post, isLiked: true, likesCount: initialCount + 1 };
+      this.isLiked.set(true);
+      this.likesCount.update(c => c + 1);
+      this.post.isLiked = true;
+      this.post.likesCount = this.likesCount();
+
       this.postService.likePost(userId, this.post.id).subscribe({
-        next: () => { this.savingLike = false; },
+        next: () => {
+          this.savingLike = false;
+          this.loadLikers();
+        },
         error: (err) => {
           if (err.status !== 409) {
             // Revert
-            this.post = { ...this.post, isLiked: false, likesCount: initialCount };
+            this.isLiked.set(false);
+            this.likesCount.set(initialCount);
+            this.post.isLiked = false;
+            this.post.likesCount = initialCount;
+          } else {
+            this.loadLikers();
           }
           this.savingLike = false;
         }
@@ -194,20 +245,27 @@ export class PostCardComponent {
   }
 
   submitComment(): void {
-    if (!this.commentText.trim()) return;
-    const userId = this.authService.getCurrentUserId();
-    if (!userId) return;
-    const text = this.commentText.trim();
-    this.postService.addComment(userId, this.post.id, text).subscribe(() => {
-      const newComment: Comment = {
-        id: Date.now(), content: text, userId,
-        postId: this.post.id, createdAt: new Date().toISOString()
-      };
-      this.comments.update(c => [newComment, ...c]);
-      this.post = { ...this.post, commentsCount: this.post.commentsCount + 1 };
-      this.commentText = '';
-    });
-  }
+  if (!this.commentText.trim()) return;
+
+  const userId = this.authService.getCurrentUserId();
+  if (!userId) return;
+
+  const text = this.commentText.trim();
+
+  this.postService.addComment(userId, this.post.id, text).subscribe(res => {
+
+    const newComment: Comment = (res as any).data; // ✅ real DB comment
+
+    this.comments.update(c => [newComment, ...c]);
+
+    this.post = {
+      ...this.post,
+      commentsCount: (this.post.commentsCount || 0) + 1
+    };
+
+    this.commentText = '';
+  });
+}
 
   deleteComment(commentId: number): void {
     this.postService.deleteComment(commentId).subscribe(() => {
@@ -277,5 +335,29 @@ export class PostCardComponent {
     if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
     if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
     return date.toLocaleDateString();
+  }
+
+  getAuthorAvatarUrl(): string | null {
+    const url = this.post.author?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
+  }
+
+  getPostImageUrl(): string | null {
+    const url = this.post.mediaUrl;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/posts/media/${filename}` : url;
+  }
+
+  getCommentAvatarUrl(comment: Comment): string | null {
+    const url = comment.author?.profilePicture;
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    const filename = url.split('/').pop();
+    return filename ? `/api/users/media/${filename}` : url;
   }
 }
