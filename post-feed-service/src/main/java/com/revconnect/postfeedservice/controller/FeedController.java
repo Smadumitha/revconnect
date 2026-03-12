@@ -19,9 +19,9 @@ public class FeedController {
     }
     // Personalized Feed
     @GetMapping("/home")
-    public List<PostResponse> homeFeed(@RequestParam Long userId) {
+    public org.springframework.data.domain.Page<PostResponse> homeFeed(@RequestParam Long userId, org.springframework.data.domain.Pageable pageable) {
 
-        return feedService.getHomeFeed(userId);
+        return feedService.getHomeFeed(userId, pageable);
     }
     @GetMapping("/trending-tags")
     public List<String> trendingTags(){
@@ -29,22 +29,22 @@ public class FeedController {
     }
     // Trending Posts
     @GetMapping("/trending")
-    public List<PostResponse> trendingPosts(@RequestParam(required = false) Long userId) {
+    public org.springframework.data.domain.Page<PostResponse> trendingPosts(@RequestParam(required = false) Long userId, org.springframework.data.domain.Pageable pageable) {
 
-        return feedService.getTrendingPosts(userId);
+        return feedService.getTrendingPosts(userId, pageable);
     }
 
     // Search Posts By Hashtag
     @GetMapping("/hashtag")
-    public List<PostResponse> searchByHashtag(@RequestParam String tag, @RequestParam(required = false) Long userId) {
+    public org.springframework.data.domain.Page<PostResponse> searchByHashtag(@RequestParam String tag, @RequestParam(required = false) Long userId, org.springframework.data.domain.Pageable pageable) {
 
-        return feedService.searchByHashtag(tag, userId);
+        return feedService.searchByHashtag(tag, userId, pageable);
     }
 
     // Promotional Posts
     @GetMapping("/promotional")
-    public List<PostResponse> promotionalPosts(@RequestParam(required = false) Long userId) {
+    public org.springframework.data.domain.Page<PostResponse> promotionalPosts(@RequestParam(required = false) Long userId, org.springframework.data.domain.Pageable pageable) {
 
-        return feedService.getPromotionalPosts(userId);
+        return feedService.getPromotionalPosts(userId, pageable);
     }
 }

@@ -26,9 +26,11 @@ public class ConnectionService {
     private UserClient userClient;
 
     public ConnectionService(ConnectionRequestRepository requestRepo,
-                             FollowerRepository followerRepo) {
+                             FollowerRepository followerRepo,
+                             UserClient userClient) {
         this.requestRepo = requestRepo;
         this.followerRepo = followerRepo;
+        this.userClient = userClient;
     }
 
     public ConnectionRequestDTO sendRequest(Long senderId, Long receiverId) {

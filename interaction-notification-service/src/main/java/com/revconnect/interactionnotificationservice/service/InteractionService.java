@@ -9,5 +9,5 @@ public interface InteractionService {
 
     public boolean hasLiked(Long userId, Long postId);
 
-
+    java.util.List<String> getLikerNames(Long postId);
 }

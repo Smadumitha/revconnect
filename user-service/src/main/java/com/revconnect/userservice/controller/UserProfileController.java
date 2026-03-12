@@ -99,9 +99,21 @@ public class UserProfileController {
         Path path = Paths.get("uploads/" + filename);
         Files.createDirectories(path.getParent());
         Files.write(path, file.getBytes());
-        String url = "/uploads/" + filename; // or your S3 URL
+        String url = "/api/users/media/" + filename; 
         profile.setProfilePictureUrl(url);
         userProfileRepository.save(profile);
         return Map.of("url", url);
+    }
+
+    @GetMapping("/media/{filename}")
+    public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> getProfilePicture(@PathVariable String filename) throws IOException {
+        Path path = Paths.get("uploads/" + filename);
+        if (!Files.exists(path)) {
+            return org.springframework.http.ResponseEntity.notFound().build();
+        }
+        org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(path.toUri());
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.IMAGE_JPEG)
+                .body(resource);
     }
 }

@@ -2,6 +2,7 @@ package com.revconnect.interactionnotificationservice.service.impl;
 
 import com.revconnect.interactionnotificationservice.client.PostServiceClient;
 import com.revconnect.interactionnotificationservice.dto.CommentRequestDTO;
+import com.revconnect.interactionnotificationservice.dto.CommentResponseDTO;
 import com.revconnect.interactionnotificationservice.dto.InteractionEvent;
 import com.revconnect.interactionnotificationservice.entity.Comment;
 import com.revconnect.interactionnotificationservice.event.InteractionEventProducer;
@@ -23,10 +24,11 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final NotificationService notificationService;
     private final PostServiceClient postServiceClient;
+    private final com.revconnect.interactionnotificationservice.client.UserServiceClient userServiceClient;
     private final InteractionEventProducer interactionEventProducer;
 
     @Override
-    public String addComment(CommentRequestDTO request) {
+    public CommentResponseDTO addComment(CommentRequestDTO request) {
 
         Comment comment = Comment.builder()
                 .userId(request.getUserId())
@@ -36,7 +38,7 @@ public class CommentServiceImpl implements CommentService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        commentRepository.save(comment);
+        Comment saved = commentRepository.save(comment);
 
         interactionEventProducer
                 .sendInteractionEvent(new InteractionEvent(request.getPostId(), request.getUserId(), "COMMENT"));
@@ -45,20 +47,17 @@ public class CommentServiceImpl implements CommentService {
         try {
             postOwnerId = postServiceClient.getPostOwnerId(request.getPostId());
         } catch (Exception e) {
-            postOwnerId = 1L; // Fallback
+            postOwnerId = 1L;
         }
 
         notificationService.createNotification(
                 postOwnerId,
                 request.getUserId(),
                 "COMMENT",
-                "User " + request.getUserId() + " commented on your post");
+                "User " + request.getUserId() + " commented on your post"
+        );
 
-        if (request.getParentCommentId() == null) {
-            return "Comment added successfully";
-        }
-
-        return "Reply added successfully";
+        return mapToResponseDTO(saved);
     }
 
     @Override
@@ -74,8 +73,9 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public Page<Comment> getPostComments(Long postId, Pageable pageable) {
-        return commentRepository.findByPostIdAndParentCommentIdIsNull(postId, pageable);
+    public org.springframework.data.domain.Page<com.revconnect.interactionnotificationservice.dto.CommentResponseDTO> getPostComments(Long postId, Pageable pageable) {
+        return commentRepository.findByPostIdAndParentCommentIdIsNull(postId, pageable)
+                .map(this::mapToResponseDTO);
     }
 
     @Override
@@ -84,7 +84,29 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public java.util.List<Comment> getPostCommentsList(Long postId) {
-        return commentRepository.findByPostIdOrderByCreatedAtAsc(postId);
+    public java.util.List<com.revconnect.interactionnotificationservice.dto.CommentResponseDTO> getPostCommentsList(Long postId) {
+        return commentRepository.findByPostIdOrderByCreatedAtAsc(postId)
+                .stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
+    private com.revconnect.interactionnotificationservice.dto.CommentResponseDTO mapToResponseDTO(Comment comment) {
+        com.revconnect.interactionnotificationservice.dto.UserDTO author = null;
+        try {
+            author = userServiceClient.getUserById(comment.getUserId());
+        } catch (Exception e) {
+            // Log and fallback
+        }
+        
+        return com.revconnect.interactionnotificationservice.dto.CommentResponseDTO.builder()
+                .id(comment.getId())
+                .userId(comment.getUserId())
+                .postId(comment.getPostId())
+                .content(comment.getContent())
+                .parentCommentId(comment.getParentCommentId())
+                .createdAt(comment.getCreatedAt())
+                .author(author)
+                .build();
     }
 }

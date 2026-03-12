@@ -29,7 +29,7 @@ class PostControllerTest {
                 .content("Test Post")
                 .build();
 
-        when(postService.getPostById(1L)).thenReturn(response);
+        when(postService.getPostById(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.isNull())).thenReturn(response);
 
         mockMvc.perform(get("/posts/1"))
                 .andExpect(status().isOk())

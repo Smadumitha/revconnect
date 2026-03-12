@@ -242,13 +242,10 @@ public class PostService {
 
         return post.getUserId();
     }
-    public List<PostResponse> getPostsByUser(Long userId, Long currentUserId){
+    public org.springframework.data.domain.Page<PostResponse> getPostsByUser(Long userId, Long currentUserId, org.springframework.data.domain.Pageable pageable){
 
-        List<Post> posts = postRepository.findByUserId(userId);
-
-        return posts.stream()
-                .map(p -> toResponse(p, currentUserId))
-                .toList();
+        return postRepository.findByUserId(userId, pageable)
+                .map(p -> toResponse(p, currentUserId));
     }
 
     public void updateMediaUrl(Long postId, String url) {

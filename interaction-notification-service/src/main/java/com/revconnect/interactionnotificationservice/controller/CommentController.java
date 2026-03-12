@@ -2,6 +2,7 @@ package com.revconnect.interactionnotificationservice.controller;
 
 import com.revconnect.interactionnotificationservice.dto.ApiResponse;
 import com.revconnect.interactionnotificationservice.dto.CommentRequestDTO;
+import com.revconnect.interactionnotificationservice.dto.CommentResponseDTO;
 import com.revconnect.interactionnotificationservice.entity.Comment;
 import com.revconnect.interactionnotificationservice.service.impl.CommentServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +19,10 @@ public class CommentController {
 
     private final CommentServiceImpl commentService;
 
+    //@PostMapping
     @PostMapping
-    public ResponseEntity<ApiResponse<String>> addComment(@RequestBody CommentRequestDTO request) {
-        String result = commentService.addComment(request);
+    public ResponseEntity<ApiResponse<CommentResponseDTO>> addComment(@RequestBody CommentRequestDTO request) {
+        CommentResponseDTO result = commentService.addComment(request);
         return ResponseEntity.ok(ApiResponse.success("Success", result));
     }
 
@@ -32,9 +34,9 @@ public class CommentController {
 
     // CHANGED: Returns List<Comment> not Page<Comment> for simpler frontend integration
     @GetMapping("/post/{postId}")
-    public ResponseEntity<ApiResponse<java.util.List<Comment>>> getPostComments(
+    public ResponseEntity<ApiResponse<java.util.List<com.revconnect.interactionnotificationservice.dto.CommentResponseDTO>>> getPostComments(
             @PathVariable Long postId) {
-        java.util.List<Comment> result = commentService.getPostCommentsList(postId);
+        java.util.List<com.revconnect.interactionnotificationservice.dto.CommentResponseDTO> result = commentService.getPostCommentsList(postId);
         return ResponseEntity.ok(ApiResponse.success("Success", result));
     }
 

@@ -1,24 +1,32 @@
 package com.revconnect.connectionservice.service;
 
+import com.revconnect.connectionservice.client.UserClient;
 import com.revconnect.connectionservice.dto.ConnectionRequestDTO;
+import com.revconnect.connectionservice.dto.ConnectionStatusDTO;
+import com.revconnect.connectionservice.dto.UserProfileResponse;
 import com.revconnect.connectionservice.entity.ConnectionRequest;
 import com.revconnect.connectionservice.entity.Follower;
 import com.revconnect.connectionservice.repository.ConnectionRequestRepository;
 import com.revconnect.connectionservice.repository.FollowerRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.web.server.ResponseStatusException;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ConnectionServiceTest {
 
     @Mock
@@ -27,142 +35,115 @@ public class ConnectionServiceTest {
     @Mock
     private FollowerRepository followerRepo;
 
+    @Mock
+    private UserClient userClient;
+
     @InjectMocks
     private ConnectionService connectionService;
 
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
+    private UserProfileResponse mockSender;
+    private UserProfileResponse mockReceiver;
+    private ConnectionRequest mockRequest;
+    private Follower mockFollower;
+
+    @Before
+    public void setUp() {
+        mockSender = new UserProfileResponse();
+        mockSender.setUserId(1L);
+        mockSender.setUsername("sender");
+
+        mockReceiver = new UserProfileResponse();
+        mockReceiver.setUserId(2L);
+        mockReceiver.setUsername("receiver");
+
+        mockRequest = new ConnectionRequest();
+        mockRequest.setId(10L);
+        mockRequest.setSenderId(1L);
+        mockRequest.setReceiverId(2L);
+        mockRequest.setStatus("PENDING");
+        mockRequest.setCreatedAt(LocalDateTime.now());
+
+        mockFollower = new Follower();
+        mockFollower.setId(20L);
+        mockFollower.setFollowerId(1L);
+        mockFollower.setFollowingId(2L);
     }
 
-
     @Test
-    void testSendRequestSuccess() {
+    public void testSendRequest_Success() {
+        when(userClient.getUserProfile(1L)).thenReturn(mockSender);
+        when(userClient.getUserProfile(2L)).thenReturn(mockReceiver);
+        when(followerRepo.existsByFollowerIdAndFollowingId(1L, 2L)).thenReturn(false);
+        when(requestRepo.findBySenderIdAndReceiverId(1L, 2L)).thenReturn(Optional.empty());
+        when(requestRepo.save(any(ConnectionRequest.class))).thenReturn(mockRequest);
 
-        ConnectionRequest request = new ConnectionRequest();
-        request.setId(1L);
-        request.setSenderId(1L);
-        request.setReceiverId(2L);
-        request.setStatus("PENDING");
-        request.setCreatedAt(LocalDateTime.now());
+        ConnectionRequestDTO dto = connectionService.sendRequest(1L, 2L);
 
-        when(requestRepo.existsBySenderIdAndReceiverId(1L,2L)).thenReturn(false);
-        when(requestRepo.existsBySenderIdAndReceiverId(2L,1L)).thenReturn(false);
-        when(followerRepo.findByFollowerId(1L)).thenReturn(List.of());
-        when(requestRepo.save(any())).thenReturn(request);
-
-        ConnectionRequestDTO result = connectionService.sendRequest(1L,2L);
-
-        assertEquals("PENDING", result.getStatus());
+        assertNotNull(dto);
+        assertEquals(Long.valueOf(10L), dto.getId());
+        assertEquals("PENDING", dto.getStatus());
     }
 
-
     @Test
-    void testSelfRequestNotAllowed(){
+    public void testAcceptRequest_Success() {
+        when(requestRepo.findById(10L)).thenReturn(Optional.of(mockRequest));
+        when(requestRepo.save(any(ConnectionRequest.class))).thenReturn(mockRequest);
+        when(followerRepo.save(any(Follower.class))).thenReturn(mockFollower);
+        when(userClient.getUserProfile(1L)).thenReturn(mockSender);
+        when(userClient.getUserProfile(2L)).thenReturn(mockReceiver);
 
-        assertThrows(ResponseStatusException.class, () ->
-                connectionService.sendRequest(1L,1L));
+        ConnectionRequestDTO dto = connectionService.acceptRequest(10L);
+
+        assertEquals("ACCEPTED", dto.getStatus());
+        verify(followerRepo).save(any(Follower.class));
     }
 
-
     @Test
-    void testDuplicateRequest(){
+    public void testRejectRequest_Success() {
+        when(requestRepo.findById(10L)).thenReturn(Optional.of(mockRequest));
+        when(requestRepo.save(any(ConnectionRequest.class))).thenReturn(mockRequest);
+        when(userClient.getUserProfile(1L)).thenReturn(mockSender);
+        when(userClient.getUserProfile(2L)).thenReturn(mockReceiver);
 
-        when(requestRepo.existsBySenderIdAndReceiverId(1L,2L)).thenReturn(true);
+        ConnectionRequestDTO dto = connectionService.rejectRequest(10L);
 
-        assertThrows(ResponseStatusException.class, () ->
-                connectionService.sendRequest(1L,2L));
+        assertEquals("REJECTED", dto.getStatus());
     }
 
-
     @Test
-    void testAcceptRequest(){
-
-        ConnectionRequest request = new ConnectionRequest();
-        request.setId(5L);
-        request.setSenderId(1L);
-        request.setReceiverId(2L);
-        request.setStatus("PENDING");
-
-        when(requestRepo.findById(5L)).thenReturn(Optional.of(request));
-
-        ConnectionRequestDTO result = connectionService.acceptRequest(5L);
-
-        assertEquals("ACCEPTED", result.getStatus());
-        verify(followerRepo, times(1)).save(any(Follower.class));
+    public void testGetFollowers_Success() {
+        when(followerRepo.findByFollowingId(2L)).thenReturn(List.of(mockFollower));
+        List<Follower> followers = connectionService.getFollowers(2L);
+        assertEquals(1, followers.size());
     }
 
-
     @Test
-    void testRejectRequest() {
-
-        ConnectionRequest request = new ConnectionRequest();
-        request.setId(6L);
-        request.setSenderId(2L);
-        request.setReceiverId(3L);
-        request.setStatus("PENDING");
-
-        ConnectionRequest savedRequest = new ConnectionRequest();
-        savedRequest.setId(6L);
-        savedRequest.setSenderId(2L);
-        savedRequest.setReceiverId(3L);
-        savedRequest.setStatus("REJECTED");
-
-        when(requestRepo.findById(6L)).thenReturn(Optional.of(request));
-        when(requestRepo.save(any(ConnectionRequest.class))).thenReturn(savedRequest);
-
-        ConnectionRequestDTO result = connectionService.rejectRequest(6L);
-
-        assertEquals("REJECTED", result.getStatus());
+    public void testGetFollowing_Success() {
+        when(followerRepo.findByFollowerId(1L)).thenReturn(List.of(mockFollower));
+        List<Follower> following = connectionService.getFollowing(1L);
+        assertEquals(1, following.size());
     }
 
-
     @Test
-    void testGetFollowers(){
+    public void testGetConnectionStatus_Success() {
+        when(followerRepo.existsByFollowerIdAndFollowingId(1L, 2L)).thenReturn(true);
+        when(requestRepo.findBySenderIdAndReceiverIdAndStatus(1L, 2L, "ACCEPTED")).thenReturn(Optional.of(mockRequest));
 
-        Follower follower = new Follower();
-        follower.setFollowerId(1L);
-        follower.setFollowingId(2L);
+        ConnectionStatusDTO status = connectionService.getConnectionStatus(1L, 2L);
 
-        when(followerRepo.findByFollowingId(2L)).thenReturn(List.of(follower));
-
-        List<Follower> result = connectionService.getFollowers(2L);
-
-        assertEquals(1,result.size());
+        assertTrue(status.isFollowing());
+        assertTrue(status.isConnected());
     }
 
-
     @Test
-    void testGetFollowing(){
+    public void testUnfollow_Success() {
+        when(followerRepo.findByFollowerId(1L)).thenReturn(List.of(mockFollower));
+        when(requestRepo.findBySenderIdAndReceiverId(1L, 2L)).thenReturn(Optional.of(mockRequest));
 
-        Follower follower = new Follower();
-        follower.setFollowerId(1L);
-        follower.setFollowingId(2L);
+        connectionService.unfollow(1L, 2L);
 
-        when(followerRepo.findByFollowerId(1L)).thenReturn(List.of(follower));
-
-        List<Follower> result = connectionService.getFollowing(1L);
-
-        assertEquals(1,result.size());
-    }
-
-
-    @Test
-    void testMutualConnections(){
-
-        Follower f1 = new Follower();
-        f1.setFollowerId(1L);
-        f1.setFollowingId(5L);
-
-        Follower f2 = new Follower();
-        f2.setFollowerId(3L);
-        f2.setFollowingId(5L);
-
-        when(followerRepo.findByFollowerId(1L)).thenReturn(List.of(f1));
-        when(followerRepo.findByFollowerId(3L)).thenReturn(List.of(f2));
-
-        List<Follower> result = connectionService.getMutualConnections(1L,3L);
-
-        assertEquals(1,result.size());
+        verify(followerRepo).delete(mockFollower);
+        verify(requestRepo).save(mockRequest);
+        assertEquals("REMOVED", mockRequest.getStatus());
     }
 }

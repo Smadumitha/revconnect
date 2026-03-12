@@ -10,4 +10,6 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
     Optional<Interaction> findByUserIdAndPostIdAndType(Long userId, Long postId, String type);
 
     long countByPostIdAndType(Long postId, String type);
+
+    java.util.List<com.revconnect.interactionnotificationservice.entity.Interaction> findByPostIdAndType(Long postId, String type);
 }

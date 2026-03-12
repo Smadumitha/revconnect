@@ -22,6 +22,7 @@ public class InteractionServiceImpl implements InteractionService {
     private final InteractionRepository interactionRepository;
     private final NotificationService notificationService;
     private final PostServiceClient postServiceClient;
+    private final com.revconnect.interactionnotificationservice.client.UserServiceClient userServiceClient;
     private final InteractionEventProducer interactionEventProducer;
 
     @Override
@@ -88,5 +89,37 @@ public class InteractionServiceImpl implements InteractionService {
     @Override
     public boolean hasLiked(Long userId, Long postId) {
         return interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE").isPresent();
+    }
+
+    @Override
+    public java.util.List<String> getLikerNames(Long postId) {
+        return interactionRepository.findByPostIdAndType(postId, "LIKE").stream()
+                .map(i -> {
+                    try {
+                        com.revconnect.interactionnotificationservice.dto.UserDTO user =
+                                userServiceClient.getUserById(i.getUserId());
+
+                        if (user == null) {
+                            return "User " + i.getUserId();
+                        }
+
+                        // Prefer username
+                        if (user.getUsername() != null && !user.getUsername().isEmpty()) {
+                            return user.getUsername();
+                        }
+
+                        // fallback to display name
+                        if (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) {
+                            return user.getDisplayName();
+                        }
+
+                        return "User " + i.getUserId();
+
+                    } catch (Exception e) {
+                        return "User " + i.getUserId();
+                    }
+                })
+                .limit(5)
+                .toList();
     }
 }

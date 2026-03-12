@@ -25,8 +25,8 @@ public class PostController {
     }
 
     @GetMapping("/user/{userId}")
-    public List<PostResponse> getPostsByUser(@PathVariable Long userId, @RequestParam(required = false) Long currentUserId){
-        return postService.getPostsByUser(userId, currentUserId);
+    public org.springframework.data.domain.Page<PostResponse> getPostsByUser(@PathVariable Long userId, @RequestParam(required = false) Long currentUserId, org.springframework.data.domain.Pageable pageable){
+        return postService.getPostsByUser(userId, currentUserId, pageable);
     }
     @GetMapping("/test")
     public String test(){
@@ -62,8 +62,20 @@ public class PostController {
         Path path = Paths.get("uploads/" + filename);
         Files.createDirectories(path.getParent());
         Files.write(path, file.getBytes());
-        String url = "/uploads/" + filename;
+        String url = "/posts/media/" + filename;
         postService.updateMediaUrl(postId, url);
         return ResponseEntity.ok(url);
+    }
+
+    @GetMapping("/media/{filename}")
+    public ResponseEntity<org.springframework.core.io.Resource> getMedia(@PathVariable String filename) throws IOException {
+        Path path = Paths.get("uploads/" + filename);
+        if (!Files.exists(path)) {
+            return ResponseEntity.notFound().build();
+        }
+        org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(path.toUri());
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.IMAGE_JPEG)
+                .body(resource);
     }
 }

@@ -19,47 +19,36 @@ public class FeedService {
     private final HashtagRepository hashtagRepository;
     private final PostService postService;
 
-    public List<PostResponse> getHomeFeed(Long userId){
+    public org.springframework.data.domain.Page<PostResponse> getHomeFeed(Long userId, org.springframework.data.domain.Pageable pageable){
 
-        List<FollowerResponse> followers = connectionClient.getFollowingUsers(userId);
+        List<com.revconnect.postfeedservice.dto.FollowerResponse> followers = connectionClient.getFollowingUsers(userId);
 
         List<Long> followingIds = followers.stream()
-                .map(FollowerResponse::getFollowingId)
+                .map(com.revconnect.postfeedservice.dto.FollowerResponse::getFollowingId)
                 .toList();
 
         if(followingIds.isEmpty()){
-            return List.of();
+            return org.springframework.data.domain.Page.empty();
         }
 
-        List<Post> posts = postRepository.findByUserIdIn(followingIds);
-
-        return posts.stream()
-                .map(p -> postService.toResponse(p, userId))
-                .toList();
+        return postRepository.findByUserIdIn(followingIds, pageable)
+                .map(p -> postService.toResponse(p, userId));
     }
 
-    public List<PostResponse> getTrendingPosts(Long userId){
+    public org.springframework.data.domain.Page<PostResponse> getTrendingPosts(Long userId, org.springframework.data.domain.Pageable pageable){
 
-        List<Post> posts = postRepository.findTop10ByOrderByCreatedAtDesc();
-
-        return posts.stream()
-                .map(p -> postService.toResponse(p, userId))
-                .toList();
+        return postRepository.findByOrderByCreatedAtDesc(pageable)
+                .map(p -> postService.toResponse(p, userId));
     }
-    public List<PostResponse> searchByHashtag(String tag, Long userId){
+    public org.springframework.data.domain.Page<PostResponse> searchByHashtag(String tag, Long userId, org.springframework.data.domain.Pageable pageable){
 
-        List<Post> posts = postRepository.findPostsByHashtag(tag);
-
-        return posts.stream()
-                .map(p -> postService.toResponse(p, userId))
-                .toList();
+        return postRepository.findPostsByHashtag(tag, pageable)
+                .map(p -> postService.toResponse(p, userId));
     }
-    public List<PostResponse> getPromotionalPosts(Long userId){
+    public org.springframework.data.domain.Page<PostResponse> getPromotionalPosts(Long userId, org.springframework.data.domain.Pageable pageable){
 
-        return postRepository.findByPromotionalTrue()
-                .stream()
-                .map(p -> postService.toResponse(p, userId))
-                .toList();
+        return postRepository.findByPromotionalTrue(pageable)
+                .map(p -> postService.toResponse(p, userId));
     }
 
     public List<String> getTrendingTags(){
