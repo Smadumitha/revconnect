@@ -1,0 +1,212 @@
+.profile-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+.spinner-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50vh;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #2d2b4e;
+    border-top-color: #6c63ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.profile-cover {
+    position: relative;
+}
+
+.cover-banner {
+    height: 200px;
+}
+
+.cover-personal {
+    background: linear-gradient(135deg, #1a1929, #6c63ff);
+}
+
+.cover-creator {
+    background: linear-gradient(135deg, #1a1929, #f5a623);
+}
+
+.cover-business {
+    background: linear-gradient(135deg, #1a1929, #4ecb71);
+}
+
+.profile-header-content {
+    padding: 0 32px;
+    display: flex;
+    align-items: flex-start;
+    /* Changed from flex-end to flex-start for better alignment */
+    gap: 24px;
+    margin-top: -40px;
+    /* Reduced negative margin */
+    position: relative;
+    z-index: 2;
+}
+
+.avatar-xl {
+    width: 120px;
+    height: 120px;
+    border-radius: 24px;
+    /* Changed to squire-ish for modern look */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    border: 6px solid #0f0e1a;
+    overflow: hidden;
+    background: #1a1929;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-info {
+    flex: 1;
+    padding-bottom: 10px;
+}
+
+.profile-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.profile-name {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    color: white;
+}
+
+.profile-username {
+    color: #9b99bb;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.role-chip {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    margin-right: 6px;
+    font-weight: 600;
+}
+
+.role-personal {
+    background: #6c63ff33;
+    color: #8b85ff;
+}
+
+.role-creator {
+    background: #f5a62333;
+    color: #f5a623;
+}
+
+.role-business {
+    background: #4ecb7133;
+    color: #4ecb71;
+}
+
+.privacy-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.badge-public {
+    color: #4ecb71;
+}
+
+.badge-private {
+    color: #ff6584;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.profile-bio {
+    color: #9b99bb;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.profile-stats-row {
+    display: flex;
+    gap: 40px;
+    margin-top: 20px;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    /* Added bottom border */
+}
+
+.pstat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.pstat strong {
+    font-size: 20px;
+    color: #e8e6ff;
+}
+
+.pstat span {
+    font-size: 11px;
+    color: #9b99bb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-content {
+    padding: 20px 32px;
+}
+
+.profile-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 24px;
+}
+
+.sidebar-card {
+    padding: 20px;
+}
+
+.section-header {
+    margin-bottom: 16px;
+}
+
+.post-count {
+    background: #6c63ff22;
+    color: #8b85ff;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.empty-posts {
+    text-align: center;
+    padding: 40px;
+    color: #9b99bb;
+}

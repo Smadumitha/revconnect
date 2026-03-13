@@ -1,0 +1,125 @@
+package com.revconnect.interactionnotificationservice.service.impl;
+
+import com.revconnect.interactionnotificationservice.client.PostServiceClient;
+import com.revconnect.interactionnotificationservice.dto.InteractionEvent;
+import com.revconnect.interactionnotificationservice.entity.Interaction;
+import com.revconnect.interactionnotificationservice.event.InteractionEventProducer;
+import com.revconnect.interactionnotificationservice.exception.ConflictException;
+import com.revconnect.interactionnotificationservice.exception.ResourceNotFoundException;
+import com.revconnect.interactionnotificationservice.repository.InteractionRepository;
+import com.revconnect.interactionnotificationservice.service.InteractionService;
+import com.revconnect.interactionnotificationservice.service.NotificationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class InteractionServiceImpl implements InteractionService {
+
+    private final InteractionRepository interactionRepository;
+    private final NotificationService notificationService;
+    private final PostServiceClient postServiceClient;
+    private final com.revconnect.interactionnotificationservice.client.UserServiceClient userServiceClient;
+    private final InteractionEventProducer interactionEventProducer;
+
+    @Override
+    public String likePost(Long userId, Long postId) {
+        Long postOwnerId;
+
+        try {
+            postOwnerId = postServiceClient.getPostOwnerId(postId);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("Post not found");
+        }
+
+        if(postOwnerId == null){
+            throw new ResourceNotFoundException("Post not found");
+        }
+        Optional<Interaction> existingLike = interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
+
+        if (existingLike.isPresent()) {
+            throw new ConflictException("Post already liked");
+        }
+
+        Interaction interaction = Interaction.builder()
+                .userId(userId)
+                .postId(postId)
+                .type("LIKE")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        interactionRepository.save(interaction);
+
+        // Send event for analytics
+        interactionEventProducer.sendInteractionEvent(
+                new InteractionEvent(postId, userId, "LIKE")
+        );
+
+        notificationService.createNotification(
+                postOwnerId,
+                userId,
+                "LIKE",
+                "User " + userId + " liked your post");
+
+        return "Post liked successfully";
+    }
+
+    @Override
+    public String unlikePost(Long userId, Long postId) {
+        Optional<Interaction> existingLike = interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE");
+
+        if (existingLike.isEmpty()) {
+            throw new ResourceNotFoundException("Like not found");
+        }
+
+        interactionRepository.delete(existingLike.get());
+
+        interactionEventProducer.sendInteractionEvent(new InteractionEvent(postId, userId, "UNLIKE"));
+        return "Post unliked successfully";
+    }
+
+    @Override
+    public long getLikeCount(Long postId) {
+        return interactionRepository.countByPostIdAndType(postId, "LIKE");
+    }
+
+    @Override
+    public boolean hasLiked(Long userId, Long postId) {
+        return interactionRepository.findByUserIdAndPostIdAndType(userId, postId, "LIKE").isPresent();
+    }
+
+    @Override
+    public java.util.List<String> getLikerNames(Long postId) {
+        return interactionRepository.findByPostIdAndType(postId, "LIKE").stream()
+                .map(i -> {
+                    try {
+                        com.revconnect.interactionnotificationservice.dto.UserDTO user =
+                                userServiceClient.getUserById(i.getUserId());
+
+                        if (user == null) {
+                            return "User " + i.getUserId();
+                        }
+
+                        // Prefer username
+                        if (user.getUsername() != null && !user.getUsername().isEmpty()) {
+                            return user.getUsername();
+                        }
+
+                        // fallback to display name
+                        if (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) {
+                            return user.getDisplayName();
+                        }
+
+                        return "User " + i.getUserId();
+
+                    } catch (Exception e) {
+                        return "User " + i.getUserId();
+                    }
+                })
+                .limit(5)
+                .toList();
+    }
+}

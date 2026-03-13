@@ -1,0 +1,80 @@
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="brand">
+            <div class="brand-icon"><i class="fas fa-bolt"></i></div>
+            <h1>RevConnect</h1>
+            <p>Join millions of professionals</p>
+        </div>
+        <div class="stats">
+            <div class="stat"><span class="stat-num">2M+</span><span class="stat-label">Professionals</span></div>
+            <div class="stat"><span class="stat-num">50K+</span><span class="stat-label">Companies</span></div>
+            <div class="stat"><span class="stat-num">10K+</span><span class="stat-label">Creators</span></div>
+        </div>
+    </div>
+    <div class="auth-right">
+        <div class="auth-card">
+            <h2>Create account</h2>
+            <p class="subtitle">Start your journey on RevConnect</p>
+
+            <div *ngIf="error()" class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ error() }}</div>
+
+            <form (ngSubmit)="onRegister()">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Display Name</label>
+                        <input class="form-input" type="text" placeholder="Your full name"
+                            [(ngModel)]="form.displayName" name="displayName">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input class="form-input" type="text" placeholder="@username" [(ngModel)]="form.username"
+                            name="username" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input class="form-input" type="email" placeholder="you@example.com" [(ngModel)]="form.email"
+                        name="email" required>
+                    <div class="error-text" *ngIf="form.email && !isEmailValid()"
+                        style="color: #ff6584; font-size: 12px; margin-top: 4px;">
+                        <i class="fas fa-exclamation-circle"></i> Email must contain &#64;
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input class="form-input" type="password" placeholder="Min. 6 characters"
+                        [(ngModel)]="form.password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Security Question</label>
+                    <select class="form-input" [(ngModel)]="form.securityQuestion" name="securityQuestion" required>
+                        <option value="" disabled selected>Select a question</option>
+                        <option *ngFor="let q of securityQuestions" [value]="q">{{ q }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Security Answer</label>
+                    <input class="form-input" type="text" placeholder="Your secret answer"
+                        [(ngModel)]="form.securityAnswer" name="securityAnswer" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Account Type</label>
+                    <div class="role-selector">
+                        <div class="role-option" *ngFor="let role of roles" [class.active]="form.role === role.value"
+                            (click)="setRole(role.value)">
+                            <i [class]="role.icon"></i>
+                            <span>{{ role.label }}</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-full" type="submit" [disabled]="loading()">
+                    <span *ngIf="!loading()"><i class="fas fa-user-plus"></i> Create Account</span>
+                    <span *ngIf="loading()"><i class="fas fa-spinner fa-spin"></i> Creating...</span>
+                </button>
+            </form>
+
+            <div class="divider"><span>Already have an account?</span></div>
+            <p class="text-center"><a routerLink="/auth/login">Sign in here</a></p>
+        </div>
+    </div>
+</div>

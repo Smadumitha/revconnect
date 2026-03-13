@@ -1,0 +1,68 @@
+# Missing Backend Endpoints Report
+
+These are the endpoints the **frontend requires** but the **backend does not yet have**. You need to add them to the respective microservices.
+
+---
+
+## 1. Auth Service (`auth-service`)
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| `POST` | `/auth/validate-token` | _(optional)_ Validate a JWT token — useful for guards |
+
+> **Good news:** Auth service is mostly compatible after the frontend fixes. The main flows (register, login, refresh, logout, security question, validate-answer, reset-password) all exist.
+
+---
+
+## 2. User Service (`user-service`)
+
+| Method | Endpoint | Body / Params | Notes |
+|---|---|---|---|
+| `GET` | `/api/users/me` | needs JWT → extract user from token | Frontend (and many components) need "get current user profile" |
+| `GET` | `/api/users/username/{username}` | Path: `username` | Lookup profile by username |
+| `GET` | `/api/users/suggestions` | - | Suggest users to follow (e.g. random or mutual-based) |
+
+---
+
+## 3. Connection Service (`connection-service`)
+
+| Method | Endpoint | Body / Params | Notes |
+|---|---|---|---|
+| `GET` | `/connections` | - | Get all accepted connections for the current user |
+| `GET` | `/connections/pending/received` | - | List incoming pending connection requests |
+| `GET` | `/connections/pending/sent` | - | List outgoing pending connection requests |
+| `DELETE` | `/connections/{id}` | Path: `connectionId` | Remove/disconnect from a connection |
+
+---
+
+## 4. Post-Feed Service (`post-feed-service`)
+
+| Method | Endpoint | Body / Params | Notes |
+|---|---|---|---|
+| `GET` | `/posts/user/{userId}` | Path: `userId`, Params: `page`, `size` | Get all posts by a specific user |
+| `GET` | `/feed/trending-tags` | - | Return trending hashtags |
+
+> The current `/feed/trending` returns posts; `trending-tags` should return the list of popular hashtag strings.
+
+---
+
+## 5. Interaction & Notification Service (`interaction-notification-service`)
+
+| Method | Endpoint | Body / Params | Notes |
+|---|---|---|---|
+| `GET` | `/api/notifications` | Params: `userId`, `page`, `size` | List all notifications with pagination |
+| `GET` | `/api/notifications/unread-count` | Param: `userId` | Return count of unread notifications |
+| `PUT` | `/api/notifications/read-all` | Param or Body: `userId` | Mark all notifications as read for a user |
+
+---
+
+## Summary Table
+
+| Service | Missing Endpoints |
+|---|---|
+| `auth-service` | 0–1 (token validation optional) |
+| `user-service` | 3 |
+| `connection-service` | 4 |
+| `post-feed-service` | 2 |
+| `interaction-notification-service` | 3 |
+| **Total** | **12–13** |

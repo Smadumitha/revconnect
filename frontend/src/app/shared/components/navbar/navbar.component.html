@@ -1,0 +1,99 @@
+<nav class="navbar">
+    <div class="nav-brand">
+        <a routerLink="/feed" class="brand-link">
+            <div class="brand-icon"><i class="fas fa-bolt"></i></div>
+            <span class="brand-name">RevConnect</span>
+        </a>
+    </div>
+
+    <div class="nav-search hide-mobile">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" placeholder="Search people, posts, hashtags..." [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()" class="search-input">
+    </div>
+
+    <div class="nav-links">
+        <a routerLink="/feed" routerLinkActive="active" class="nav-item" title="Home">
+            <i class="fas fa-home"></i>
+            <span class="nav-label">Home</span>
+        </a>
+
+        <a routerLink="/connections" routerLinkActive="active" class="nav-item" title="Network">
+            <i class="fas fa-users"></i>
+            <span class="nav-label">Network</span>
+        </a>
+
+        <a routerLink="/search" routerLinkActive="active" class="nav-item" title="Discover">
+            <i class="fas fa-compass"></i>
+            <span class="nav-label">Discover</span>
+        </a>
+
+        <!-- Analytics: only for CREATOR and BUSINESS -->
+        <a routerLink="/analytics" routerLinkActive="active" class="nav-item analytics-link"
+            *ngIf="isCreatorOrBusiness()" title="Analytics">
+            <i class="fas fa-chart-line"></i>
+            <span class="nav-label">Analytics</span>
+        </a>
+
+        <a routerLink="/notifications" routerLinkActive="active" class="nav-item notif-item" title="Notifications">
+            <i class="fas fa-bell"></i>
+            <span class="badge-notif" *ngIf="notifService.unreadCount() > 0">
+                {{ notifService.unreadCount() > 99 ? '99+' : notifService.unreadCount() }}
+            </span>
+            <span class="nav-label">Alerts</span>
+        </a>
+
+        <div class="nav-user-container">
+            <a [routerLink]="['/profile', authService.currentUser()?.username]" class="nav-user-link"
+                title="My Profile">
+                <div class="avatar-nav" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                    <img *ngIf="authService.currentUser()?.profilePicture" [src]="getAvatarUrl()" class="avatar-img">
+                    <span *ngIf="!authService.currentUser()?.profilePicture">{{ getInitials() }}</span>
+                </div>
+                <span class="nav-label hide-tablet">Me</span>
+            </a>
+            <button class="menu-toggle-btn" (click)="toggleMenu($event)" title="More options">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+
+            <div class="user-dropdown" *ngIf="menuOpen()" (click)="$event.stopPropagation()">
+                <div class="dropdown-header">
+                    <div class="dh-avatar" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                        <img *ngIf="authService.currentUser()?.profilePicture" [src]="getAvatarUrl()"
+                            class="avatar-img">
+                        <span *ngIf="!authService.currentUser()?.profilePicture">{{ getInitials() }}</span>
+                    </div>
+                    <div class="dh-info">
+                        <div class="dh-name">{{ authService.currentUser()?.displayName }}</div>
+                        <div class="dh-username">&#64;{{ authService.currentUser()?.username }}</div>
+                        <span class="dh-role" [class]="'role-' + (authService.currentUser()?.role || '').toLowerCase()">
+                            {{ authService.currentUser()?.role }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="dropdown-divider"></div>
+
+                <a class="dropdown-item" [routerLink]="['/profile', authService.currentUser()?.username]"
+                    (click)="closeMenu()">
+                    <i class="fas fa-user"></i> My Profile
+                </a>
+
+                <a class="dropdown-item" routerLink="/settings" (click)="closeMenu()">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+
+                <a class="dropdown-item analytics-link" routerLink="/analytics" (click)="closeMenu()"
+                    *ngIf="isCreatorOrBusiness()">
+                    <i class="fas fa-chart-line"></i> Analytics Hub
+                </a>
+
+                <div class="dropdown-divider"></div>
+
+                <button class="dropdown-item text-danger" (click)="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Sign Out
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>

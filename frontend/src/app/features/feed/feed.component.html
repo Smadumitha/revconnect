@@ -1,0 +1,238 @@
+<app-navbar></app-navbar>
+<div class="feed-layout">
+    <!-- Left Sidebar -->
+   <aside class="sidebar-left hide-tablet">
+
+        <!-- PROFILE CARD -->
+        <div class="profile-card card">
+
+            <div class="profile-banner"></div>
+
+            <div class="profile-info">
+
+                <!-- Avatar -->
+                <div class="avatar avatar-lg"
+                    [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+
+                    <img *ngIf="authService.currentUser()?.profilePicture"
+                        [src]="getAvatarUrl()"
+                        class="avatar-img">
+
+                    <span *ngIf="!authService.currentUser()?.profilePicture">
+                        {{ getInitials() }}
+                    </span>
+
+                </div>
+
+                <!-- Name -->
+                <a [routerLink]="['/profile', authService.currentUser()?.username]"
+                    class="profile-name">
+
+                    {{ authService.currentUser()?.displayName }}
+
+                </a>
+
+                <!-- Username -->
+                <div class="profile-username">
+                    &#64;{{ authService.currentUser()?.username }}
+                </div>
+
+                <!-- Role -->
+                <div class="role-badge"
+                    [class]="'role-' + (authService.currentUser()?.role || '').toLowerCase()">
+
+                    {{ authService.currentUser()?.role }}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- QUICK LINKS -->
+        <div class="card quick-links">
+
+            <div class="quick-link-title">Quick Links</div>
+
+            <a class="quick-link" routerLink="/feed">
+                <i class="fas fa-home"></i> Home Feed
+            </a>
+
+            <a class="quick-link" routerLink="/connections">
+                <i class="fas fa-users"></i> Network
+            </a>
+
+            <a class="quick-link" routerLink="/notifications">
+                <i class="fas fa-bell"></i> Notifications
+            </a>
+
+            <a class="quick-link" routerLink="/search">
+                <i class="fas fa-compass"></i> Discover
+            </a>
+
+            <a class="quick-link analytics-link"
+                routerLink="/analytics"
+                *ngIf="isCreatorOrBusiness()">
+
+                <i class="fas fa-chart-line"></i> Analytics Hub
+
+            </a>
+
+            <a class="quick-link" routerLink="/settings">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+
+        </div>
+
+    </aside>
+
+    <!-- Main Feed -->
+    <main class="feed-main">
+        <!-- Create Post -->
+        <div class="card create-post" *ngIf="!showCreateForm()">
+            <div class="create-post-trigger" (click)="showCreateForm.set(true)">
+                <div class="avatar avatar-sm" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">
+                    {{ getInitials() }}
+                </div>
+                <div class="create-placeholder">What's on your mind?</div>
+            </div>
+            <div class="create-actions">
+                <button class="create-action" (click)="showCreateForm.set(true)">
+                    <i class="fas fa-image"></i> Photo
+                </button>
+                <button class="create-action" (click)="showCreateForm.set(true)">
+                    <i class="fas fa-hashtag"></i> Hashtag
+                </button>
+            </div>
+        </div>
+
+        <!-- Create Post Form -->
+        <div class="card create-post-form" *ngIf="showCreateForm()">
+            <div class="form-header">
+                <div class="avatar" [style.background]="'linear-gradient(135deg, #6c63ff, #ff6584)'">{{ getInitials() }}
+                </div>
+                <div class="header-meta">
+                    <div class="font-semibold">{{ authService.currentUser()?.displayName }}</div>
+                    <div class="post-meta-row">
+                        <select class="visibility-select" [(ngModel)]="newPost.type">
+                            <option value="TEXT">📝 Text Post</option>
+                            <option value="PROMOTIONAL" *ngIf="authService.currentUser()?.role !== 'PERSONAL'">📣
+                                Promotional</option>
+                        </select>
+                        <!-- ✅ NEW: Added Pinning Checkbox -->
+                        <label class="pin-checkbox">
+                            <input type="checkbox" [(ngModel)]="newPost.pinned">
+                            <i class="fas fa-thumbtack"></i> Pin to Profile
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-ghost btn-xs close-btn" (click)="showCreateForm.set(false)"><i
+                        class="fas fa-times"></i></button>
+            </div>
+
+            <textarea [(ngModel)]="newPost.content" placeholder="Share your thoughts, ideas, insights..."
+                class="post-textarea" rows="4"></textarea>
+
+            <!-- ✅ NEW: Added Hashtag and Product Tag Inputs -->
+            <div class="tag-inputs">
+                <div class="input-with-icon">
+                    <i class="fas fa-hashtag"></i>
+                    <input [(ngModel)]="newPost.hashtags" placeholder="Hashtags (comma separated)" class="tag-input">
+                </div>
+                <div class="input-with-icon" *ngIf="authService.currentUser()?.role !== 'PERSONAL'">
+                    <i class="fas fa-tag"></i>
+                    <input [(ngModel)]="newPost.productTags" placeholder="Product tags (comma separated)"
+                        class="tag-input">
+                </div>
+            </div>
+
+            <!-- ✅ NEW: Added Scheduling and CTA sections -->
+            <div class="advanced-post-options">
+                <div class="form-group" *ngIf="newPost.type === 'PROMOTIONAL'">
+                    <label><i class="fas fa-ad"></i> CTA Text & URL</label>
+                    <div class="flex-row">
+                        <input [(ngModel)]="newPost.ctaText" class="form-input"
+                            placeholder="Button text (e.g. Shop Now)">
+                        <input [(ngModel)]="newPost.ctaUrl" class="form-input" placeholder="URL (https://...)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-alt"></i> Schedule Post (Optional)</label>
+                    <input type="datetime-local" [(ngModel)]="newPost.scheduledAt" class="form-input">
+                </div>
+
+                <!-- Image Upload Preview -->
+                <div class="image-upload-preview" *ngIf="imagePreview">
+                    <img [src]="imagePreview" class="preview-img">
+                    <button class="btn btn-ghost btn-xs remove-preview" (click)="removeImage()"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" accept="image/*">
+                <button class="btn btn-ghost btn-sm upload-btn" (click)="fileInput.click()" *ngIf="!imagePreview">
+                    <i class="fas fa-image"></i> Add Photo
+                </button>
+            </div>
+
+            <div class="form-footer">
+                <div class="hashtag-hint">Engage your audience with rich content</div>
+                <div class="form-btns">
+                    <button class="btn btn-ghost btn-sm" (click)="showCreateForm.set(false)">Cancel</button>
+                    <button class="btn btn-primary btn-sm" (click)="createPost()"
+                        [disabled]="!newPost.content.trim() || creating()">
+                        <i class="fas fa-paper-plane"></i>
+                        {{ creating() ? (newPost.scheduledAt ? 'Scheduling...' : 'Posting...') : (newPost.scheduledAt ?
+                        'Schedule' : 'Post') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feed Tabs -->
+        <div class="feed-tabs">
+            <button class="tab-btn" [class.active]="activeTab() === 'feed'" (click)="switchTab('feed')">
+                <i class="fas fa-stream"></i> For You
+            </button>
+            <button class="tab-btn" [class.active]="activeTab() === 'trending'" (click)="switchTab('trending')">
+                <i class="fas fa-fire"></i> Trending
+            </button>
+            <button class="tab-btn promo-tab" [class.active]="activeTab() === 'promotional'"
+                *ngIf="isCreatorOrBusiness()" (click)="switchTab('promotional')">
+                <i class="fas fa-bullhorn"></i> Promotions
+            </button>
+            <button class="tab-btn sched-tab" [class.active]="activeTab() === 'scheduled'" *ngIf="isCreatorOrBusiness()"
+                (click)="switchTab('scheduled')">
+                <i class="fas fa-calendar-alt"></i> Scheduled
+            </button>
+        </div>
+
+        <!-- Posts -->
+        <div *ngIf="loading()" class="spinner"></div>
+        <div *ngIf="!loading() && posts().length === 0" class="empty-state card">
+            <i class="fas fa-stream empty-icon"></i>
+            <h3>Your feed is empty</h3>
+            <p>Follow people and accounts to see their posts here.</p>
+            <a routerLink="/search" class="btn btn-primary btn-sm">
+                <i class="fas fa-compass"></i> Discover People
+            </a>
+        </div>
+        <app-post-card *ngFor="let post of posts(); trackBy: trackPost" [post]="post" (deleted)="onPostDeleted($event)"
+            (hashtagClicked)="onHashtagClick($event)">
+        </app-post-card>
+
+        <button *ngIf="hasMore()" class="btn btn-outline w-full load-more" (click)="loadMore()">
+            <i class="fas fa-chevron-down"></i> Load More
+        </button>
+    </main>
+
+    <!-- Right Sidebar -->
+    <aside class="sidebar-right hide-tablet">
+        <div class="card trends-card">
+            <h3 class="sidebar-title">Trending Topics</h3>
+            <div class="trend-item" *ngFor="let tag of trendingTags">
+                <span class="trend-tag">#{{ tag }}</span>
+            </div>
+        </div>
+
+    </aside>
+</div>
